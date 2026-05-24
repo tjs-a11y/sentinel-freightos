@@ -2,6 +2,58 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script>
+(function(){
+  const HASH='441a21e51728e07630119ebdaea2036db64d5dcadd13777a0a1894e21633ee79';
+  const SK='s_auth';
+  async function sha256(msg){
+    const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(msg));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  if(sessionStorage.getItem(SK)==='1'){return;}
+  document.addEventListener('DOMContentLoaded',function(){
+    const app=document.getElementById('shell');
+    if(app)app.style.display='none';
+    const lock=document.createElement('div');
+    lock.style.cssText='position:fixed;inset:0;background:#07090C;display:flex;align-items:center;justify-content:center;z-index:99999;font-family:DM Sans,sans-serif';
+    lock.innerHTML=`<div style="width:340px;text-align:center">
+      <div style="font-family:Syne,sans-serif;font-size:22px;font-weight:800;color:#00E5A0;letter-spacing:-.02em;margin-bottom:4px">&#x2B21; SENTINEL</div>
+      <div style="font-size:10px;color:#404C5E;letter-spacing:.12em;text-transform:uppercase;margin-bottom:32px">Back Office &mdash; Owner Access Only</div>
+      <div style="background:#161C26;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:28px">
+        <div style="font-size:12px;color:#7A8699;margin-bottom:16px">Enter your password to continue</div>
+        <input id="pwi" type="password" placeholder="Password" autocomplete="off"
+          style="width:100%;background:#1C2330;border:1px solid rgba(255,255,255,0.11);border-radius:6px;color:#E8ECF2;font-size:14px;padding:10px 14px;outline:none;text-align:center;letter-spacing:.1em;margin-bottom:10px;box-sizing:border-box" />
+        <div id="pwe" style="font-size:11px;color:#FF4757;margin-bottom:10px;min-height:16px"></div>
+        <button id="pwb" style="width:100%;background:#00E5A0;color:#040D08;border:none;border-radius:6px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Unlock Dashboard</button>
+      </div>
+      <div style="font-size:10px;color:#404C5E;margin-top:16px">Unauthorized access is prohibited</div>
+    </div>`;
+    document.body.appendChild(lock);
+    let attempts=0;
+    async function tryUnlock(){
+      const val=document.getElementById('pwi').value;
+      if(!val)return;
+      const h=await sha256(val);
+      if(h===HASH){
+        sessionStorage.setItem(SK,'1');
+        lock.style.transition='opacity .3s';lock.style.opacity='0';
+        setTimeout(()=>{lock.remove();if(app)app.style.display='';},320);
+      } else {
+        attempts++;
+        const left=5-attempts;
+        document.getElementById('pwe').textContent=attempts>=5?'Too many attempts. Refresh to try again.':'Incorrect password'+(left<=2?' — '+left+' attempts left':'');
+        document.getElementById('pwi').value='';
+        document.getElementById('pwi').style.borderColor='#FF4757';
+        setTimeout(()=>{const el=document.getElementById('pwi');if(el)el.style.borderColor='rgba(255,255,255,0.11)';},900);
+        if(attempts>=5){const b=document.getElementById('pwb');if(b)b.disabled=true;}
+      }
+    }
+    document.getElementById('pwb').addEventListener('click',tryUnlock);
+    document.getElementById('pwi').addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock();});
+    setTimeout(()=>{const el=document.getElementById('pwi');if(el)el.focus();},100);
+  });
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sentinel FreightOS — Back Office</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -138,7 +190,7 @@ input::placeholder{color:var(--text3)}
 </style>
 </head>
 <body>
-<div class="shell">
+<div class="shell" id="shell">
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
