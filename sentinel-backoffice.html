@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinel FreightOS — Back Office</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#07090C;--bg2:#0C0F14;--bg3:#111520;
+  --surface:#161C26;--surface2:#1C2330;--surface3:#222A38;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);
+  --accent:#00E5A0;--accent2:#00B87A;--accent-dim:rgba(0,229,160,0.10);
+  --red:#FF4757;--red-dim:rgba(255,71,87,0.10);
+  --amber:#FFB300;--amber-dim:rgba(255,179,0,0.10);
+  --blue:#4A9FFF;--blue-dim:rgba(74,159,255,0.10);
+  --purple:#A78BFA;--purple-dim:rgba(167,139,250,0.10);
+  --text:#E8ECF2;--text2:#7A8699;--text3:#404C5E;
+  --font-d:'Syne',sans-serif;--font-b:'DM Sans',sans-serif;--font-m:'DM Mono',monospace;
+  --r:10px;--rs:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-b);font-size:13px;line-height:1.6;overflow-x:hidden}
+.shell{display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:210px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100}
+.logo-wrap{padding:18px 16px 12px;border-bottom:1px solid var(--border)}
+.logo{font-family:var(--font-d);font-size:16px;font-weight:800;color:var(--accent);letter-spacing:-.02em}
+.logo-tag{font-size:9px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-top:1px}
+.admin-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(255,71,87,0.12);color:var(--red);font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.06em;margin-top:6px;font-family:var(--font-d)}
+nav{padding:10px 8px;flex:1;overflow-y:auto}
+.ns{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;padding:6px 8px 3px;margin-top:6px}
+.ni{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:var(--rs);cursor:pointer;color:var(--text2);font-size:12px;transition:all .15s;margin-bottom:1px;border:none;background:none;width:100%;text-align:left}
+.ni:hover{background:var(--surface);color:var(--text)}
+.ni.active{background:var(--accent-dim);color:var(--accent);font-weight:500}
+.ni svg{width:14px;height:14px;flex-shrink:0;opacity:.7}
+.ni.active svg{opacity:1}
+.sb-footer{padding:12px 14px;border-top:1px solid var(--border)}
+
+/* MAIN */
+.main{margin-left:210px;flex:1}
+.topbar{height:54px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:14px;position:sticky;top:0;z-index:50}
+.pt{font-family:var(--font-d);font-size:15px;font-weight:700;letter-spacing:-.01em}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.content{padding:22px}
+
+/* SECTIONS */
+.sec{display:none}.sec.active{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.card-sm{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px}
+.ct{font-family:var(--font-d);font-size:12px;font-weight:700;letter-spacing:-.01em;margin-bottom:12px;color:var(--text);display:flex;align-items:center;justify-content:space-between}
+
+/* METRICS */
+.met{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.ml{font-size:10px;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px}
+.mv{font-family:var(--font-d);font-size:24px;font-weight:800;letter-spacing:-.03em}
+.ms{font-size:11px;color:var(--text2);margin-top:3px}
+.up{color:var(--accent)}.dn{color:var(--red)}.warn{color:var(--amber)}
+
+/* BADGES */
+.b{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500}
+.bg{background:var(--accent-dim);color:var(--accent)}
+.br{background:var(--red-dim);color:var(--red)}
+.ba{background:var(--amber-dim);color:var(--amber)}
+.bb{background:var(--blue-dim);color:var(--blue)}
+.bp{background:var(--purple-dim);color:var(--purple)}
+.bgr{background:rgba(255,255,255,0.05);color:var(--text2)}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:9px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;padding:7px 10px;border-bottom:1px solid var(--border)}
+.tbl td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,0.03);color:var(--text2)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,255,255,0.02);color:var(--text)}
+.bold{font-weight:500;color:var(--text)!important}
+.mono{font-family:var(--font-m);font-size:11px}
+
+/* LIVE DOT */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 2s infinite;margin-right:5px}
+.rdot{width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block;animation:pulse 1.2s infinite;margin-right:5px}
+
+/* PROGRESS */
+.pb{height:4px;border-radius:2px;background:var(--surface2);overflow:hidden;margin-top:5px}
+.pf{height:100%;border-radius:2px;transition:width 1s ease}
+
+/* SPARKLINE */
+.spark{display:flex;align-items:flex-end;gap:3px;height:32px}
+.spark-bar{flex:1;border-radius:2px;min-height:4px;transition:height .5s}
+
+/* USER ROW */
+.user-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--rs);transition:background .12s;cursor:pointer}
+.user-row:hover{background:var(--surface2)}
+.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:11px;font-weight:700;flex-shrink:0}
+
+/* FEED */
+.feed-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+.feed-icon{width:28px;height:28px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.feed-time{font-size:10px;color:var(--text3);font-family:var(--font-m)}
+
+/* INPUTS */
+input,select{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rs);color:var(--text);font-family:var(--font-b);font-size:12px;padding:7px 10px;outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--accent)}
+input::placeholder{color:var(--text3)}
+
+/* BTNS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--rs);font-family:var(--font-b);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;border:none}
+.btn-p{background:var(--accent);color:#040D08}
+.btn-p:hover{background:var(--accent2)}
+.btn-g{background:transparent;border:1px solid var(--border2);color:var(--text2)}
+.btn-g:hover{color:var(--text);background:var(--surface2)}
+.btn-r{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,71,87,.2)}
+
+/* CREDIT METER */
+.credit-bar{height:8px;border-radius:4px;background:var(--surface2);overflow:hidden;margin:6px 0}
+.credit-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent2),var(--accent))}
+
+/* TOGGLE */
+.tog{position:relative;width:30px;height:17px;display:inline-block}
+.tog input{opacity:0;width:0;height:0}
+.tog-sl{position:absolute;inset:0;background:var(--surface2);border-radius:9px;cursor:pointer;transition:.2s;border:1px solid var(--border2)}
+.tog input:checked+.tog-sl{background:var(--accent)}
+.tog-sl:before{content:'';position:absolute;width:11px;height:11px;left:2px;bottom:2px;background:#fff;border-radius:50%;transition:.2s}
+.tog input:checked+.tog-sl:before{transform:translateX(13px)}
+
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo-wrap">
+    <div class="logo">⬡ SENTINEL</div>
+    <div class="logo-tag">FreightOS · Back Office</div>
+    <div class="admin-chip">⬡ OWNER ACCESS</div>
+  </div>
+  <nav>
+    <div class="ns">Command Center</div>
+    <button class="ni active" onclick="show('overview')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </button>
+    <button class="ni" onclick="show('revenue')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Revenue & Credits
+    </button>
+    <button class="ni" onclick="show('users')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      All Users
+    </button>
+    <div class="ns">Platform</div>
+    <button class="ni" onclick="show('fraud')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Fraud Activity
+    </button>
+    <button class="ni" onclick="show('inquiries')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+      All Inquiries
+    </button>
+    <button class="ni" onclick="show('credits')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      Credit Manager
+    </button>
+    <div class="ns">System</div>
+    <button class="ni" onclick="show('pricing')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      Pricing Control
+    </button>
+    <button class="ni" onclick="show('alerts')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      System Alerts
+      <span class="b br" style="margin-left:auto;font-size:9px;padding:1px 6px">5</span>
+    </button>
+    <button class="ni" onclick="show('livefeed')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+      Live Activity Feed
+    </button>
+  </nav>
+  <div class="sb-footer">
+    <div style="font-size:10px;color:var(--text3)">Logged in as</div>
+    <div style="font-size:12px;font-weight:500;color:var(--text);margin-top:2px">Teon · Owner</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+<div class="topbar">
+  <div class="pt" id="pt">Command Overview</div>
+  <div style="font-size:11px;color:var(--text2);display:flex;align-items:center"><span class="ldot"></span>Live · Updates every 30s</div>
+  <div class="tb-right">
+    <div style="font-size:11px;color:var(--text2)" id="clock"></div>
+    <button class="btn btn-g" style="font-size:11px" onclick="refreshAll()">↻ Refresh</button>
+    <div style="width:30px;height:30px;background:var(--red-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:11px;font-weight:700;color:var(--red)">T</div>
+  </div>
+</div>
+<div class="content">
+
+<!-- ══════════════════════ OVERVIEW ══════════════════════ -->
+<div class="sec active" id="overview">
+  <div class="g5" style="margin-bottom:14px">
+    <div class="met"><div class="ml">Total Users</div><div class="mv" id="ov-users">0</div><div class="ms up" id="ov-users-s"></div></div>
+    <div class="met"><div class="ml">MRR</div><div class="mv up" id="ov-mrr">$0</div><div class="ms up" id="ov-mrr-s"></div></div>
+    <div class="met"><div class="ml">Credits Sold Today</div><div class="mv" id="ov-cred">0</div><div class="ms up" id="ov-cred-s"></div></div>
+    <div class="met"><div class="ml">Fraud Blocks Today</div><div class="mv dn" id="ov-fraud">0</div><div class="ms" style="color:var(--text2)" id="ov-fraud-s"></div></div>
+    <div class="met"><div class="ml">Today's Revenue</div><div class="mv up" id="ov-rev">$0</div><div class="ms up" id="ov-rev-s"></div></div>
+  </div>
+
+  <div class="g2" style="margin-bottom:14px">
+    <div class="card">
+      <div class="ct">Revenue This Week
+        <span class="b bg" style="font-size:9px">LIVE</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px">
+        <div><div style="font-family:var(--font-d);font-size:30px;font-weight:800;color:var(--accent)" id="week-rev">$0</div><div style="font-size:11px;color:var(--text2)" id="week-rev-s"></div></div>
+        <div style="text-align:right"><div style="font-size:11px;color:var(--text2)">Credits sold</div><div style="font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--text)" id="week-cred">0</div></div>
+      </div>
+      <div class="spark" id="rev-spark"></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:6px" id="spark-labels"></div>
+    </div>
+    <div class="card">
+      <div class="ct">User Growth</div>
+      <div class="g2" style="gap:8px;margin-bottom:12px">
+        <div style="background:var(--surface2);border-radius:var(--rs);padding:10px 12px"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Free Tier</div><div style="font-family:var(--font-d);font-size:18px;font-weight:700" id="ug-free">0</div></div>
+        <div style="background:var(--surface2);border-radius:var(--rs);padding:10px 12px"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Paid</div><div style="font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--accent)" id="ug-paid">0</div></div>
+        <div style="background:var(--surface2);border-radius:var(--rs);padding:10px 12px"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Subscribers</div><div style="font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--blue)" id="ug-sub">0</div></div>
+        <div style="background:var(--surface2);border-radius:var(--rs);padding:10px 12px"><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Churn Rate</div><div style="font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--amber)" id="ug-churn">0%</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Free → Paid conversion rate</div>
+      <div class="pb"><div class="pf" id="conv-bar" style="background:var(--accent)"></div></div>
+      <div style="font-size:11px;color:var(--accent);margin-top:4px;font-weight:500" id="conv-rate"></div>
+    </div>
+  </div>
+
+  <div class="g3">
+    <div class="card">
+      <div class="ct">Top Users by Spend</div>
+      <div id="top-users"></div>
+    </div>
+    <div class="card">
+      <div class="ct">Credit Pack Sales Today</div>
+      <div id="pack-sales"></div>
+    </div>
+    <div class="card">
+      <div class="ct">Platform Health</div>
+      <div id="platform-health"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ REVENUE ══════════════════════ -->
+<div class="sec" id="revenue">
+  <div class="g4" style="margin-bottom:14px">
+    <div class="met"><div class="ml">Total Revenue (All Time)</div><div class="mv up" id="r-total">$0</div><div class="ms">Since launch</div></div>
+    <div class="met"><div class="ml">This Month</div><div class="mv up" id="r-month">$0</div><div class="ms up" id="r-month-s"></div></div>
+    <div class="met"><div class="ml">Avg Revenue / User</div><div class="mv" id="r-arpu">$0</div><div class="ms">ARPU</div></div>
+    <div class="met"><div class="ml">Credits Outstanding</div><div class="mv warn" id="r-credits">0</div><div class="ms">Across all accounts</div></div>
+  </div>
+  <div class="g2" style="margin-bottom:14px">
+    <div class="card">
+      <div class="ct">Revenue Breakdown by Type</div>
+      <div id="rev-breakdown"></div>
+    </div>
+    <div class="card">
+      <div class="ct">Daily Revenue — Last 14 Days</div>
+      <div style="display:flex;align-items:flex-end;gap:4px;height:80px;margin-top:8px" id="daily-bars"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:var(--text3)" id="daily-labels"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">All Transactions — Last 50</div>
+    <table class="tbl">
+      <thead><tr><th>Time</th><th>User</th><th>Type</th><th>Pack / Plan</th><th>Credits</th><th>Amount</th><th>Status</th></tr></thead>
+      <tbody id="txn-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════ USERS ══════════════════════ -->
+<div class="sec" id="users">
+  <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">
+    <input type="text" placeholder="Search users by name, email, MC..." style="width:260px" oninput="filterUsers(this.value)" />
+    <select onchange="filterUserType(this.value)" style="width:140px">
+      <option value="">All users</option>
+      <option value="free">Free tier</option>
+      <option value="paid">Credit buyers</option>
+      <option value="sub">Subscribers</option>
+    </select>
+    <div style="margin-left:auto;font-size:11px;color:var(--text2)" id="user-count-label"></div>
+  </div>
+  <div class="card">
+    <table class="tbl" id="user-table">
+      <thead><tr><th>User</th><th>Plan</th><th>Credits Left</th><th>Total Spent</th><th>Inquiries</th><th>Fraud Caught</th><th>Joined</th><th>Last Active</th><th>Actions</th></tr></thead>
+      <tbody id="user-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════ FRAUD ══════════════════════ -->
+<div class="sec" id="fraud">
+  <div class="g4" style="margin-bottom:14px">
+    <div class="met"><div class="ml">Total Fraud Blocks</div><div class="mv dn" id="f-total">0</div><div class="ms">All time</div></div>
+    <div class="met"><div class="ml">Double Bookings</div><div class="mv dn" id="f-db">0</div><div class="ms">Detected</div></div>
+    <div class="met"><div class="ml">Fake Carriers</div><div class="mv dn" id="f-fc">0</div><div class="ms">Blocked</div></div>
+    <div class="met"><div class="ml">$ Saved (Est.)</div><div class="mv up" id="f-saved">$0</div><div class="ms">For our users</div></div>
+  </div>
+  <div class="card">
+    <div class="ct">Live Fraud Event Log</div>
+    <table class="tbl">
+      <thead><tr><th>Time</th><th>User</th><th>Type</th><th>Details</th><th>MC/DOT</th><th>Risk Score</th><th>Action Taken</th></tr></thead>
+      <tbody id="fraud-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════ INQUIRIES ══════════════════════ -->
+<div class="sec" id="inquiries">
+  <div class="g4" style="margin-bottom:14px">
+    <div class="met"><div class="ml">Total Inquiries</div><div class="mv" id="inq-total">0</div><div class="ms">All time</div></div>
+    <div class="met"><div class="ml">Today</div><div class="mv up" id="inq-today">0</div><div class="ms up" id="inq-today-s"></div></div>
+    <div class="met"><div class="ml">FraudShield Scans</div><div class="mv" id="inq-fs">0</div><div class="ms">Credits consumed</div></div>
+    <div class="met"><div class="ml">LoadVerify Checks</div><div class="mv" id="inq-lv">0</div><div class="ms">Credits consumed</div></div>
+  </div>
+  <div class="card">
+    <div class="ct">All Inquiry Log</div>
+    <table class="tbl">
+      <thead><tr><th>Time</th><th>User</th><th>Type</th><th>Query</th><th>Result</th><th>Credits Used</th><th>Duration</th></tr></thead>
+      <tbody id="inq-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════ CREDIT MANAGER ══════════════════════ -->
+<div class="sec" id="credits">
+  <div class="g4" style="margin-bottom:14px">
+    <div class="met"><div class="ml">Credits Issued (All Time)</div><div class="mv" id="cr-issued">0</div></div>
+    <div class="met"><div class="ml">Credits Consumed</div><div class="mv warn" id="cr-used">0</div></div>
+    <div class="met"><div class="ml">Credits Outstanding</div><div class="mv up" id="cr-out">0</div></div>
+    <div class="met"><div class="ml">Avg Credits / User</div><div class="mv" id="cr-avg">0</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ct">Grant Credits to User</div>
+      <div style="margin-bottom:10px"><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">User Email or ID</label><input type="text" id="cr-user" placeholder="user@email.com" style="width:100%" /></div>
+      <div style="margin-bottom:10px"><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Credits to Grant</label><input type="number" id="cr-amount" placeholder="e.g. 100" style="width:100%" /></div>
+      <div style="margin-bottom:14px"><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Reason</label><input type="text" id="cr-reason" placeholder="e.g. Goodwill · Refund · Promotion" style="width:100%" /></div>
+      <button class="btn btn-p" style="width:100%;justify-content:center" onclick="grantCredits()">Grant Credits</button>
+      <div id="cr-result"></div>
+    </div>
+    <div class="card">
+      <div class="ct">Users Low on Credits</div>
+      <div id="low-credit-users"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ PRICING CONTROL ══════════════════════ -->
+<div class="sec" id="pricing">
+  <div style="font-size:12px;color:var(--text2);margin-bottom:16px">Adjust pricing live. Changes take effect immediately for new purchases.</div>
+  <div class="g2" style="margin-bottom:14px">
+    <div class="card">
+      <div class="ct">Credit Pack Pricing</div>
+      <div id="pack-pricing"></div>
+    </div>
+    <div class="card">
+      <div class="ct">Subscription Plans</div>
+      <div id="sub-pricing"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">Per-Action Credit Cost</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px" id="action-pricing"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════ ALERTS ══════════════════════ -->
+<div class="sec" id="alerts">
+  <div class="g4" style="margin-bottom:14px">
+    <div class="met"><div class="ml">Critical</div><div class="mv dn">2</div></div>
+    <div class="met"><div class="ml">Warnings</div><div class="mv warn">3</div></div>
+    <div class="met"><div class="ml">Resolved Today</div><div class="mv up">8</div></div>
+    <div class="met"><div class="ml">Avg Resolution</div><div class="mv">14m</div></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px" id="sys-alerts"></div>
+</div>
+
+<!-- ══════════════════════ LIVE FEED ══════════════════════ -->
+<div class="sec" id="livefeed">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+    <span class="ldot"></span>
+    <span style="font-size:12px;color:var(--text2)">Real-time activity across all users — auto-refreshing</span>
+    <button class="btn btn-g" style="margin-left:auto;font-size:11px" onclick="clearFeed()">Clear feed</button>
+  </div>
+  <div class="card" style="max-height:600px;overflow-y:auto">
+    <div id="live-feed-items"></div>
+  </div>
+</div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+const titles={overview:'Command Overview',revenue:'Revenue & Credits',users:'All Users',fraud:'Fraud Activity',inquiries:'All Inquiries',credits:'Credit Manager',pricing:'Pricing Control',alerts:'System Alerts',livefeed:'Live Activity Feed'};
+
+function show(id){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('pt').textContent=titles[id]||id;
+  document.querySelectorAll('.ni').forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+id+"'"))b.classList.add('active');});
+}
+
+// ── SIMULATED DATA ──────────────────────────────────────────────
+const USERS=[
+  {id:'U001',name:'Marcus T.',email:'marcus@dispatchpro.com',av:'MT',avc:'#1B4F8A',plan:'sub',planLabel:'Pro · $99/mo',credits:2847,spent:312,inq:847,fraud:12,joined:'Jan 15',active:'2m ago',mc:'MC 1847291'},
+  {id:'U002',name:'Keisha R.',email:'keisha@kfleet.com',av:'KR',avc:'#0F6E56',plan:'paid',planLabel:'Power Pack',credits:1204,spent:158,inq:412,fraud:6,joined:'Feb 3',active:'8m ago',mc:'MC 2091847'},
+  {id:'U003',name:'DeShawn B.',email:'deshawn@bfreight.co',av:'DB',avc:'#854F0B',plan:'sub',planLabel:'Pro · $99/mo',credits:3100,spent:297,inq:621,fraud:9,joined:'Feb 19',active:'1h ago',mc:'MC 1090344'},
+  {id:'U004',name:'Latoya M.',email:'latoya@mlogistics.net',av:'LM',avc:'#533AB7',plan:'paid',planLabel:'Starter Pack',credits:44,spent:47,inq:198,fraud:3,joined:'Mar 1',active:'3h ago',mc:'DOT 3881290'},
+  {id:'U005',name:'Carlos V.',email:'carlos@vdispatch.io',av:'CV',avc:'#993556',plan:'free',planLabel:'Free Tier',credits:18,spent:0,inq:32,fraud:1,joined:'Mar 20',active:'Yesterday',mc:'MC 2204871'},
+  {id:'U006',name:'Tanya W.',email:'tanya@wbrokers.com',av:'TW',avc:'#0F6E56',plan:'sub',planLabel:'Unlimited · $249/mo',credits:99999,spent:747,inq:2140,fraud:31,joined:'Jan 8',active:'Just now',mc:'MC 1902844'},
+  {id:'U007',name:'James P.',email:'james@primehaul.us',av:'JP',avc:'#1B4F8A',plan:'paid',planLabel:'Pro Pack',credits:392,spent:116,inq:289,fraud:4,joined:'Mar 11',active:'4h ago',mc:'MC 1444092'},
+  {id:'U008',name:'Renee K.',email:'renee@kdispatch.co',av:'RK',avc:'#633806',plan:'free',planLabel:'Free Tier',credits:7,spent:0,inq:43,fraud:0,joined:'Apr 2',active:'2d ago',mc:'None'},
+];
+
+const FRAUD_EVENTS=[
+  {time:'2m ago',user:'Marcus T.',type:'Double Booking',details:'ATL→LAX same load DAT + Truckstop',mc:'MC 2091847',score:96,action:'Blocked'},
+  {time:'18m ago',user:'DeShawn B.',type:'New MC Fraud',details:'MC issued 3 days ago, expired insurance',mc:'DOT 9912044',score:98,action:'Blocked'},
+  {time:'1h ago',user:'Tanya W.',type:'Doc Alteration',details:'Rate con hash mismatch — $700 diff',mc:'MC 1902111',score:72,action:'Flagged'},
+  {time:'2h ago',user:'Keisha R.',type:'VoIP Phone',details:'Carrier phone number is VoIP burner',mc:'MC 2204871',score:61,action:'Warning'},
+  {time:'3h ago',user:'Marcus T.',type:'Remit-to Change',details:'4 banking changes in 7 days',mc:'MC 1847999',score:84,action:'Blocked'},
+  {time:'5h ago',user:'James P.',type:'Blacklist Hit',details:'MC found in community fraud database',mc:'MC 0991234',score:99,action:'Blocked'},
+];
+
+const INQUIRIES=[
+  {time:'Just now',user:'Marcus T.',type:'FraudShield',query:'MC 1847291',result:'SAFE',credits:1,dur:'1.2s'},
+  {time:'2m ago',user:'Tanya W.',type:'LoadVerify',query:'ATL→LAX · 6/2 8am',result:'FRAUD',credits:1,dur:'2.4s'},
+  {time:'4m ago',user:'DeShawn B.',type:'FraudShield',query:'DOT 9912044',result:'FRAUD',credits:1,dur:'1.8s'},
+  {time:'8m ago',user:'Keisha R.',type:'AI Co-Pilot',query:'ATL→DEN $2,800 1420mi',result:'PASS',credits:1,dur:'0.9s'},
+  {time:'12m ago',user:'Tanya W.',type:'DocVault',query:'Rate Con #CHI-0882',result:'MISMATCH',credits:1,dur:'0.4s'},
+  {time:'18m ago',user:'Carlos V.',type:'FraudShield',query:'MC 2204871',result:'CAUTION',credits:1,dur:'1.6s'},
+  {time:'22m ago',user:'James P.',type:'LoadVerify',query:'CHI→DAL · 6/3',result:'CLEAN',credits:1,dur:'2.1s'},
+  {time:'35m ago',user:'Marcus T.',type:'FraudShield',query:'MC 1090344',result:'SAFE',credits:1,dur:'1.1s'},
+];
+
+let PACKS=[
+  {name:'Starter',credits:100,price:9,per:'$0.09/check'},
+  {name:'Pro',credits:500,price:29,per:'$0.058/check'},
+  {name:'Power',credits:2000,price:79,per:'$0.040/check'},
+];
+let SUBS=[
+  {name:'Dispatcher',price:49,credits:'1,000/mo',desc:'Solo ops'},
+  {name:'Broker Pro',price:99,credits:'3,000/mo',desc:'Growing brokers'},
+  {name:'Unlimited',price:249,credits:'Unlimited',desc:'Enterprise'},
+];
+let ACTIONS=[
+  {action:'FraudShield Scan',credits:1,icon:'🔍'},
+  {action:'LoadVerify Check',credits:1,icon:'📋'},
+  {action:'AI Co-Pilot Analysis',credits:1,icon:'🤖'},
+  {action:'DocVault Upload',credits:1,icon:'🔒'},
+  {action:'CarrierDNA Full Profile',credits:2,icon:'🚛'},
+  {action:'Alert Notification',credits:0,icon:'🔔'},
+];
+
+const FEED_EVENTS=[
+  {icon:'🔍',text:'Marcus T. ran FraudShield on MC 1847291 — SAFE',color:'accent',time:'just now'},
+  {icon:'🚨',text:'FRAUD: Tanya W. LoadVerify blocked double booking ATL→LAX',color:'red',time:'2m ago'},
+  {icon:'💳',text:'Keisha R. purchased Power Pack (2,000 credits · $79)',color:'green',time:'4m ago'},
+  {icon:'👤',text:'New user signup: carlos@vdispatch.io — Free tier',color:'blue',time:'7m ago'},
+  {icon:'⚠️',text:'DeShawn B. FraudShield flagged DOT 9912044 — FRAUD',color:'red',time:'9m ago'},
+  {icon:'📄',text:'Tanya W. DocVault detected hash mismatch on CHI-0882',color:'amber',time:'12m ago'},
+  {icon:'💳',text:'James P. purchased Pro Pack (500 credits · $29)',color:'green',time:'15m ago'},
+  {icon:'🔍',text:'Renee K. ran FraudShield on MC 2204871 — CAUTION',color:'amber',time:'18m ago'},
+  {icon:'🔄',text:'Marcus T. auto-refill triggered — 1,000 credits added',color:'blue',time:'22m ago'},
+  {icon:'👤',text:'New user signup: renee@kdispatch.co — Free tier',color:'blue',time:'28m ago'},
+];
+
+// ── BUILD UI ────────────────────────────────────────────────────
+function rand(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function fmtN(n){return n.toLocaleString();}
+function fmtD(n){return '$'+n.toLocaleString();}
+
+function buildOverview(){
+  const users=USERS.length, paid=USERS.filter(u=>u.plan!=='free').length;
+  const sub=USERS.filter(u=>u.plan==='sub').length;
+  const mrr=sub*149+2*249; const todayRev=rand(180,420);
+  const credSold=rand(320,680); const fraudBlocked=rand(8,22);
+  animateNum('ov-users',users,''); document.getElementById('ov-users-s').textContent='+2 this week';
+  animateNum('ov-mrr',mrr,'$'); document.getElementById('ov-mrr-s').textContent='↑ 14% vs last month';
+  animateNum('ov-cred',credSold,''); document.getElementById('ov-cred-s').textContent='↑ from yesterday';
+  animateNum('ov-fraud',fraudBlocked,''); document.getElementById('ov-fraud-s').textContent='$'+rand(40,90)+'K saved';
+  animateNum('ov-rev',todayRev,'$'); document.getElementById('ov-rev-s').textContent='↑ 8% vs yesterday';
+  animateNum('week-rev',rand(1800,3200),'$'); document.getElementById('week-rev-s').textContent='↑ 22% vs last week';
+  animateNum('week-cred',rand(2400,4800),'');
+  animateNum('ug-free',USERS.filter(u=>u.plan==='free').length,'');
+  animateNum('ug-paid',paid,''); animateNum('ug-sub',sub,'');
+  document.getElementById('ug-churn').textContent='3.1%';
+  const convR=Math.round(paid/users*100);
+  document.getElementById('conv-bar').style.width=convR+'%';
+  document.getElementById('conv-rate').textContent=convR+'% of free users convert to paid';
+  buildTopUsers(); buildPackSales(); buildPlatformHealth(); buildRevSpark();
+}
+
+function animateNum(id,target,prefix){
+  const el=document.getElementById(id); if(!el)return;
+  let cur=0; const step=Math.max(1,Math.floor(target/30));
+  const t=setInterval(()=>{cur=Math.min(cur+step,target);el.textContent=prefix+(prefix==='$'?cur.toLocaleString():cur);if(cur>=target)clearInterval(t);},30);
+}
+
+function buildRevSpark(){
+  const days=['M','T','W','T','F','S','S']; const vals=[rand(180,350),rand(220,420),rand(190,380),rand(280,520),rand(340,600),rand(200,400),rand(160,320)];
+  const max=Math.max(...vals);
+  document.getElementById('rev-spark').innerHTML=vals.map((v,i)=>`<div class="spark-bar" style="height:${Math.round(v/max*100)}%;background:${i===6?'var(--accent-dim)':'var(--accent)'};opacity:${i===6?'.4':'1'}"></div>`).join('');
+  document.getElementById('spark-labels').innerHTML=days.map(d=>`<span>${d}</span>`).join('');
+}
+
+function buildTopUsers(){
+  const top=[...USERS].sort((a,b)=>b.spent-a.spent).slice(0,5);
+  document.getElementById('top-users').innerHTML=top.map(u=>`
+    <div class="user-row" onclick="show('users')">
+      <div class="av" style="background:${u.avc}22;color:${u.avc}">${u.av}</div>
+      <div style="flex:1"><div style="font-size:12px;font-weight:500;color:var(--text)">${u.name}</div><div style="font-size:10px;color:var(--text3)">${u.planLabel}</div></div>
+      <div style="text-align:right"><div style="font-size:12px;font-weight:600;color:var(--accent);font-family:var(--font-d)">$${u.spent}</div><div style="font-size:10px;color:var(--text3)">${u.inq} checks</div></div>
+    </div>`).join('');
+}
+
+function buildPackSales(){
+  const packs=[{name:'Power Pack',count:rand(8,18),rev:rand(600,1400),c:'accent'},{name:'Pro Pack',count:rand(12,28),rev:rand(350,800),c:'blue'},{name:'Starter Pack',count:rand(20,45),rev:rand(180,400),c:'amber'},{name:'Subscriptions',count:rand(2,6),rev:rand(200,600),c:'purple'}];
+  document.getElementById('pack-sales').innerHTML=packs.map(p=>{
+    const pct=Math.round(p.count/60*100);
+    return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:var(--text)">${p.name}</span><span style="color:var(--${p.c});font-weight:500">$${p.rev.toLocaleString()}</span></div><div class="pb"><div class="pf" style="width:${pct}%;background:var(--${p.c})"></div></div><div style="font-size:10px;color:var(--text3);margin-top:2px">${p.count} purchases</div></div>`;
+  }).join('');
+}
+
+function buildPlatformHealth(){
+  const items=[{l:'API Uptime',v:'99.97%',s:'up'},{l:'Avg Scan Time',v:'1.4s',s:'up'},{l:'DB Response',v:'42ms',s:'up'},{l:'Error Rate',v:'0.02%',s:'up'},{l:'Active Sessions',v:rand(8,24),s:'up'},{l:'Queue Depth',v:'0',s:'up'}];
+  document.getElementById('platform-health').innerHTML=items.map(i=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--text2)">${i.l}</span><span style="color:var(--${i.s==='up'?'accent':'red'});font-weight:500">${i.v}</span></div>`).join('');
+}
+
+function buildRevenue(){
+  const total=rand(18000,24000),month=rand(4200,6800),arpu=Math.round(total/USERS.length),credits=rand(12000,18000);
+  animateNum('r-total',total,'$');animateNum('r-month',month,'$');document.getElementById('r-month-s').textContent='↑ 18% vs last month';
+  document.getElementById('r-arpu').textContent='$'+arpu;animateNum('r-credits',credits,'');
+  const breakdown=[{l:'Credit Packs',pct:52,c:'accent'},{l:'Subscriptions',pct:35,c:'blue'},{l:'Auto-refills',pct:13,c:'amber'}];
+  document.getElementById('rev-breakdown').innerHTML=breakdown.map(b=>`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--text)">${b.l}</span><span style="color:var(--${b.c});font-weight:500">${b.pct}%</span></div><div class="pb"><div class="pf" style="width:${b.pct}%;background:var(--${b.c})"></div></div></div>`).join('');
+  const days=Array.from({length:14},(_,i)=>({d:['15','16','17','18','19','20','21','22','23','24','25','26','27','28'][i],v:rand(180,520)}));
+  const maxD=Math.max(...days.map(d=>d.v));
+  document.getElementById('daily-bars').innerHTML=days.map(d=>`<div style="flex:1;height:${Math.round(d.v/maxD*100)}%;background:var(--accent);border-radius:2px 2px 0 0;opacity:.85" title="$${d.v}"></div>`).join('');
+  document.getElementById('daily-labels').innerHTML=days.map(d=>`<span>${d.d}</span>`).join('');
+  const txns=Array.from({length:20},(_,i)=>{const u=USERS[i%USERS.length];const packs=['Starter ($9)','Pro Pack ($29)','Power ($79)','Sub $49/mo','Sub $99/mo'];const pack=packs[rand(0,4)];const amt=[9,29,79,49,99][packs.indexOf(pack)];return{time:`${rand(1,12)}:${String(rand(0,59)).padStart(2,'0')} ${rand(0,1)?'AM':'PM'}`,user:u.name,type:rand(0,1)?'Credit Pack':'Subscription',pack,credits:rand(50,2000),amt,status:'Paid'};});
+  document.getElementById('txn-table').innerHTML=txns.map(t=>`<tr><td class="mono">${t.time}</td><td class="bold">${t.user}</td><td><span class="b ${t.type==='Subscription'?'bp':'bb'}">${t.type}</span></td><td style="color:var(--text)">${t.pack}</td><td class="mono">${t.credits}</td><td style="color:var(--accent);font-weight:500">$${t.amt}</td><td><span class="b bg">Paid</span></td></tr>`).join('');
+}
+
+function buildUsers(filter='',typeFilter=''){
+  let list=USERS.filter(u=>(!filter||(u.name+u.email+u.mc).toLowerCase().includes(filter.toLowerCase()))&&(!typeFilter||u.plan===typeFilter));
+  document.getElementById('user-count-label').textContent=`${list.length} user${list.length!==1?'s':''}`;
+  document.getElementById('user-tbody').innerHTML=list.map(u=>`
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:${u.avc}22;color:${u.avc};width:26px;height:26px;font-size:10px">${u.av}</div><div><div style="font-size:12px;font-weight:500;color:var(--text)">${u.name}</div><div style="font-size:10px;color:var(--text3)">${u.email}</div></div></div></td>
+      <td><span class="b ${u.plan==='sub'?'bp':u.plan==='paid'?'bb':'bgr'}">${u.planLabel}</span></td>
+      <td>
+        <div style="font-size:12px;font-weight:500;color:${u.credits<50?'var(--red)':u.credits<200?'var(--amber)':'var(--text)'}">${u.credits===99999?'∞':fmtN(u.credits)}</div>
+        ${u.credits<50&&u.credits!==99999?'<div style="font-size:10px;color:var(--red)">⚠ Low</div>':''}
+      </td>
+      <td style="color:var(--accent);font-weight:500">${fmtD(u.spent)}</td>
+      <td class="mono">${fmtN(u.inq)}</td>
+      <td class="mono ${u.fraud>0?'dn':''}">${u.fraud}</td>
+      <td style="color:var(--text3)">${u.joined}</td>
+      <td style="color:var(--text2)">${u.active}</td>
+      <td><button class="btn btn-g" style="font-size:10px;padding:4px 9px" onclick="viewUser('${u.id}')">View</button></td>
+    </tr>`).join('');
+}
+
+function filterUsers(v){buildUsers(v,document.querySelector('#users select')?.value||'');}
+function filterUserType(v){buildUsers(document.querySelector('#users input')?.value||'',v);}
+function viewUser(id){const u=USERS.find(x=>x.id===id);if(u)alert(`User: ${u.name}\nEmail: ${u.email}\nPlan: ${u.planLabel}\nCredits: ${u.credits}\nTotal Spent: $${u.spent}\nTotal Inquiries: ${u.inq}\nFraud Caught: ${u.fraud}`);}
+
+function buildFraud(){
+  const total=rand(280,420),db=rand(80,140),fc=rand(120,200),saved=rand(180000,320000);
+  animateNum('f-total',total,'');animateNum('f-db',db,'');animateNum('f-fc',fc,'');
+  document.getElementById('f-saved').textContent='$'+saved.toLocaleString();
+  document.getElementById('fraud-table').innerHTML=FRAUD_EVENTS.map(e=>`<tr><td class="mono" style="color:var(--text3)">${e.time}</td><td class="bold">${e.user}</td><td><span class="b br">${e.type}</span></td><td style="color:var(--text2);max-width:200px">${e.details}</td><td class="mono">${e.mc}</td><td><div style="font-size:12px;font-weight:600;color:${e.score>80?'var(--red)':e.score>60?'var(--amber)':'var(--accent)'}">${e.score}</div></td><td><span class="b ${e.action==='Blocked'?'br':e.action==='Flagged'?'ba':'bgr'}">${e.action}</span></td></tr>`).join('');
+}
+
+function buildInquiries(){
+  const total=rand(4200,6800),today=rand(120,280),fs=rand(60,160),lv=rand(40,100);
+  animateNum('inq-total',total,'');animateNum('inq-today',today,'');
+  document.getElementById('inq-today-s').textContent='↑ 18% vs yesterday';
+  animateNum('inq-fs',fs,'');animateNum('inq-lv',lv,'');
+  document.getElementById('inq-table').innerHTML=INQUIRIES.map(i=>`<tr><td class="mono" style="color:var(--text3)">${i.time}</td><td class="bold">${i.user}</td><td><span class="b bb">${i.type}</span></td><td style="color:var(--text2)">${i.query}</td><td><span class="b ${i.result==='SAFE'||i.result==='CLEAN'?'bg':i.result==='FRAUD'||i.result==='MISMATCH'?'br':'ba'}">${i.result}</span></td><td class="mono">${i.credits}</td><td class="mono" style="color:var(--text3)">${i.dur}</td></tr>`).join('');
+}
+
+function buildCredits(){
+  const issued=rand(48000,72000),used=rand(32000,48000);
+  animateNum('cr-issued',issued,'');animateNum('cr-used',used,'');
+  animateNum('cr-out',issued-used,'');
+  document.getElementById('cr-avg').textContent=Math.round((issued-used)/USERS.length);
+  const low=USERS.filter(u=>u.credits<100&&u.credits!==99999).sort((a,b)=>a.credits-b.credits);
+  document.getElementById('low-credit-users').innerHTML=low.length?low.map(u=>`
+    <div class="user-row">
+      <div class="av" style="background:${u.avc}22;color:${u.avc};width:26px;height:26px;font-size:10px">${u.av}</div>
+      <div style="flex:1"><div style="font-size:12px;font-weight:500;color:var(--text)">${u.name}</div>
+        <div class="credit-bar"><div class="credit-fill" style="width:${Math.round(u.credits/100*100)}%"></div></div>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:${u.credits<20?'var(--red)':'var(--amber)'};font-family:var(--font-d)">${u.credits}</div>
+    </div>`).join(''):'<div style="font-size:12px;color:var(--text3);padding:12px 0">All users have adequate credits</div>';
+}
+
+function grantCredits(){
+  const user=document.getElementById('cr-user').value;
+  const amt=document.getElementById('cr-amount').value;
+  const res=document.getElementById('cr-result');
+  if(!user||!amt){res.innerHTML='<div style="margin-top:8px;font-size:12px;color:var(--red)">Please fill in both fields.</div>';return;}
+  res.innerHTML='<div style="margin-top:10px;padding:10px 12px;background:var(--accent-dim);border-radius:var(--rs);font-size:12px;color:var(--accent)">✓ '+amt+' credits granted to '+user+'. Balance updated.</div>';
+  document.getElementById('cr-user').value='';document.getElementById('cr-amount').value='';document.getElementById('cr-reason').value='';
+}
+
+function buildPricing(){
+  document.getElementById('pack-pricing').innerHTML=PACKS.map((p,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:11px;background:var(--surface2);border-radius:var(--rs);margin-bottom:8px">
+      <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.credits} credits · ${p.per}</div></div>
+      <div style="display:flex;align-items:center;gap:6px"><span style="color:var(--text2);font-size:12px">$</span><input type="number" value="${p.price}" style="width:60px;text-align:center" onchange="PACKS[${i}].price=+this.value;savePricing()" /><span style="font-size:11px;color:var(--text3)">/pack</span></div>
+    </div>`).join('');
+  document.getElementById('sub-pricing').innerHTML=SUBS.map((s,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:11px;background:var(--surface2);border-radius:var(--rs);margin-bottom:8px">
+      <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">${s.name}</div><div style="font-size:11px;color:var(--text3)">${s.credits} · ${s.desc}</div></div>
+      <div style="display:flex;align-items:center;gap:6px"><span style="color:var(--text2);font-size:12px">$</span><input type="number" value="${s.price}" style="width:60px;text-align:center" onchange="SUBS[${i}].price=+this.value;savePricing()" /><span style="font-size:11px;color:var(--text3)">/mo</span></div>
+    </div>`).join('');
+  document.getElementById('action-pricing').innerHTML=ACTIONS.map((a,i)=>`
+    <div style="background:var(--surface2);border-radius:var(--rs);padding:12px">
+      <div style="font-size:16px;margin-bottom:4px">${a.icon}</div>
+      <div style="font-size:11px;font-weight:500;color:var(--text);margin-bottom:8px">${a.action}</div>
+      <div style="display:flex;align-items:center;gap:6px"><input type="number" value="${a.credits}" style="width:50px;text-align:center" onchange="ACTIONS[${i}].credits=+this.value;savePricing()" /><span style="font-size:11px;color:var(--text3)">credit${a.credits!==1?'s':''}</span></div>
+    </div>`).join('');
+}
+
+function savePricing(){
+  const el=document.createElement('div');el.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--accent);color:#040D08;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;z-index:999;animation:fi .2s ease';el.textContent='✓ Pricing updated';document.body.appendChild(el);setTimeout(()=>el.remove(),2000);
+}
+
+function buildAlerts(){
+  const alerts=[
+    {type:'critical',icon:'🚨',title:'Fraud ring detected — 3 MC numbers linked',body:'MC 2091847, MC 2204871, and MC 0991234 share the same VoIP number and virtual office address in Miami. Likely organized fraud network.',time:'8 minutes ago',action:'Investigate'},
+    {type:'critical',icon:'🔴',title:'User Latoya M. credits at 44 — approaching zero',body:'Latoya has made 198 inquiries and is running low. Prime upsell opportunity — send auto-email for Pro Pack.',time:'32 minutes ago',action:'Send upsell'},
+    {type:'warn',icon:'⚠️',title:'Unusual scan volume from Carlos V.',body:'Carlos ran 18 scans in the last hour from a free account (50 credit limit). Could be legitimate or testing the system.',time:'1 hour ago',action:'Review'},
+    {type:'warn',icon:'⚠️',title:'DAT API response slow — 4.2s avg',body:'Load board scan times elevated. Affecting LoadVerify response times. Monitoring.',time:'2 hours ago',action:'Monitor'},
+    {type:'warn',icon:'⚠️',title:'3 new user signups from same IP block',body:'carlos@vdispatch.io, test@test.com, and anon4412@gmail.com signed up from the same IP range. Possible bot activity.',time:'3 hours ago',action:'Block'},
+  ];
+  document.getElementById('sys-alerts').innerHTML=alerts.map(a=>`
+    <div style="background:var(--surface);border:1px solid ${a.type==='critical'?'rgba(255,71,87,0.3)':'rgba(255,179,0,0.25)'};border-radius:var(--r);padding:16px 18px">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="font-size:22px;flex-shrink:0">${a.icon}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:${a.type==='critical'?'var(--red)':'var(--amber)'};font-family:var(--font-d);margin-bottom:4px">${a.title}</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:8px">${a.body}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="btn btn-g" style="font-size:11px">${a.action} →</button>
+            <button class="btn" style="font-size:11px;color:var(--text3);border:1px solid var(--border);background:transparent">Dismiss</button>
+            <span style="margin-left:auto;font-size:10px;color:var(--text3);font-family:var(--font-m)">${a.time}</span>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function buildLiveFeed(){
+  const colorMap={accent:'var(--accent-dim)',red:'var(--red-dim)',green:'var(--accent-dim)',blue:'var(--blue-dim)',amber:'var(--amber-dim)'};
+  document.getElementById('live-feed-items').innerHTML=FEED_EVENTS.map(e=>`
+    <div class="feed-item">
+      <div class="feed-icon" style="background:${colorMap[e.color]}">${e.icon}</div>
+      <div style="flex:1"><div style="font-size:12px;color:var(--text)">${e.text}</div><div class="feed-time">${e.time}</div></div>
+    </div>`).join('');
+}
+
+function clearFeed(){document.getElementById('live-feed-items').innerHTML='<div style="font-size:12px;color:var(--text3);padding:16px 0;text-align:center">Feed cleared. New events will appear here.</div>';}
+
+// Live feed auto-add
+const liveActions=[
+  ()=>addFeedItem('🔍','green','New FraudShield scan by Marcus T. — SAFE'),
+  ()=>addFeedItem('💳','blue','Pro Pack purchase — $29 · DeShawn B.'),
+  ()=>addFeedItem('⚠️','amber','Caution: New MC authority flagged by Keisha R.'),
+  ()=>addFeedItem('🚨','red','FRAUD BLOCKED: LoadVerify double booking detected'),
+  ()=>addFeedItem('👤','blue','New signup: dispatcher@freightco.net'),
+];
+function addFeedItem(icon,color,text){
+  const el=document.getElementById('live-feed-items');if(!el)return;
+  const colorMap={accent:'var(--accent-dim)',red:'var(--red-dim)',green:'var(--accent-dim)',blue:'var(--blue-dim)',amber:'var(--amber-dim)'};
+  const div=document.createElement('div');div.className='feed-item';div.style.animation='fi .3s ease';
+  div.innerHTML=`<div class="feed-icon" style="background:${colorMap[color]}">${icon}</div><div style="flex:1"><div style="font-size:12px;color:var(--text)">${text}</div><div class="feed-time">just now</div></div>`;
+  el.prepend(div);
+}
+
+// Clock
+function updateClock(){const n=new Date();document.getElementById('clock').textContent=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+setInterval(updateClock,1000);updateClock();
+
+// Auto live feed events
+setInterval(()=>{if(document.getElementById('livefeed').classList.contains('active')){liveActions[rand(0,liveActions.length-1)]();}},6000);
+
+// Section builder router
+const builders={overview:buildOverview,revenue:buildRevenue,users:()=>buildUsers(),fraud:buildFraud,inquiries:buildInquiries,credits:buildCredits,pricing:buildPricing,alerts:buildAlerts,livefeed:buildLiveFeed};
+const origShow=show;
+function show(id){origShow(id);if(builders[id])builders[id]();}
+
+function refreshAll(){const active=document.querySelector('.sec.active');if(active&&builders[active.id])builders[active.id]();}
+
+// Init
+buildOverview();buildRevenue();buildUsers();buildFraud();buildInquiries();buildCredits();buildPricing();buildAlerts();buildLiveFeed();
+</script>
+</body>
+</html>

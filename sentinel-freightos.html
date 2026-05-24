@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinel FreightOS — The Freight Operating System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0A0C0F;
+  --bg2: #0F1215;
+  --bg3: #141820;
+  --surface: #1A1F2A;
+  --surface2: #212838;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --accent: #00E5A0;
+  --accent2: #00B87A;
+  --accent-dim: rgba(0,229,160,0.12);
+  --accent-dim2: rgba(0,229,160,0.06);
+  --red: #FF4757;
+  --red-dim: rgba(255,71,87,0.12);
+  --amber: #FFB300;
+  --amber-dim: rgba(255,179,0,0.12);
+  --blue: #4A9FFF;
+  --blue-dim: rgba(74,159,255,0.12);
+  --text: #E8ECF2;
+  --text2: #8892A4;
+  --text3: #505A6B;
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --r: 10px;
+  --r-sm: 6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+
+/* LAYOUT */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:220px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100}
+.main{margin-left:220px;flex:1;min-height:100vh}
+.topbar{height:58px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:50}
+.content{padding:28px}
+
+/* SIDEBAR */
+.logo-wrap{padding:20px 18px 14px;border-bottom:1px solid var(--border)}
+.logo{font-family:var(--font-display);font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--accent)}
+.logo-sub{font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-top:1px}
+.nav{padding:12px 10px;flex:1;overflow-y:auto}
+.nav-section{font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;padding:6px 8px 4px;margin-top:8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);cursor:pointer;color:var(--text2);font-size:13px;transition:all .15s;margin-bottom:2px;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:var(--surface);color:var(--text)}
+.nav-item.active{background:var(--accent-dim);color:var(--accent);font-weight:500}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.8}
+.nav-item.active svg{opacity:1}
+.sidebar-footer{padding:14px 16px;border-top:1px solid var(--border)}
+.plan-badge{background:var(--accent-dim);color:var(--accent);font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.05em;font-family:var(--font-display)}
+
+/* TOPBAR */
+.page-title{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.alert-btn{position:relative;width:34px;height:34px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2)}
+.alert-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid var(--bg2)}
+.user-chip{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border-radius:20px;border:1px solid var(--border);background:var(--surface);cursor:pointer}
+.avatar{width:26px;height:26px;border-radius:50%;background:var(--accent-dim);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--font-display)}
+.user-name{font-size:12px;font-weight:500;color:var(--text)}
+
+/* SECTION SYSTEM */
+.section{display:none}
+.section.active{display:block}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+.card-sm{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.card-title{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
+
+/* METRIC TILES */
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px}
+.metric-label{font-size:11px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.metric-value{font-family:var(--font-display);font-size:26px;font-weight:800;color:var(--text);letter-spacing:-.02em}
+.metric-sub{font-size:12px;color:var(--text2);margin-top:4px}
+.metric-up{color:var(--accent)}
+.metric-dn{color:var(--red)}
+.metric-warn{color:var(--amber)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-green{background:var(--accent-dim);color:var(--accent)}
+.badge-red{background:var(--red-dim);color:var(--red)}
+.badge-amber{background:var(--amber-dim);color:var(--amber)}
+.badge-blue{background:var(--blue-dim);color:var(--blue)}
+.badge-gray{background:rgba(255,255,255,0.06);color:var(--text2)}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot-green{background:var(--accent)}
+.dot-red{background:var(--red)}
+.dot-amber{background:var(--amber)}
+
+/* TABLES */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--border)}
+.tbl td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;color:var(--text2)}
+.tbl tr:hover td{background:rgba(255,255,255,0.02);color:var(--text)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl .bold{font-weight:500;color:var(--text)}
+
+/* SCORE RING */
+.score-wrap{display:flex;align-items:center;gap:14px}
+.score-ring{position:relative;width:56px;height:56px;flex-shrink:0}
+.score-ring svg{transform:rotate(-90deg)}
+.score-ring .val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:14px;font-weight:800}
+
+/* FORM ELEMENTS */
+input,select,textarea{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text);font-family:var(--font-body);font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input::placeholder{color:var(--text3)}
+select option{background:var(--bg3)}
+label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px}
+.form-row{margin-bottom:14px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--r-sm);font-family:var(--font-body);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border:none}
+.btn-primary{background:var(--accent);color:#050A08}
+.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text);background:var(--surface2)}
+.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,71,87,0.25)}
+.btn-sm{padding:6px 12px;font-size:12px}
+
+/* RISK METER */
+.risk-bar{height:6px;border-radius:3px;background:var(--surface2);overflow:hidden;margin:8px 0}
+.risk-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+
+/* ALERT ITEMS */
+.alert-item{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:var(--r-sm);border:1px solid var(--border);margin-bottom:8px;background:var(--surface)}
+.alert-icon{width:32px;height:32px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px}
+.alert-icon-red{background:var(--red-dim)}
+.alert-icon-amber{background:var(--amber-dim)}
+.alert-icon-green{background:var(--accent-dim)}
+.alert-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
+.alert-body{font-size:12px;color:var(--text2)}
+.alert-time{font-size:11px;color:var(--text3);margin-top:4px;font-family:var(--font-mono)}
+
+/* PROGRESS */
+.prog-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.prog-bar{height:5px;border-radius:3px;background:var(--surface2)}
+.prog-fill{height:100%;border-radius:3px}
+
+/* DIVIDER */
+.divider{border:none;border-top:1px solid var(--border);margin:18px 0}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+
+/* ANIMATE */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.section.active{animation:fadeIn .25s ease}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 2s infinite;margin-right:6px}
+
+/* FRAUD SCAN ANIMATION */
+@keyframes scan{0%{top:-10%}100%{top:110%}}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scan 2.5s linear infinite;pointer-events:none}
+
+/* MODAL OVERLAY */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--bg3);border:1px solid var(--border2);border-radius:14px;padding:28px;width:520px;max-width:94vw;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:var(--font-display);font-size:18px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px;color:var(--text)}
+.modal-sub{font-size:13px;color:var(--text2);margin-bottom:20px}
+
+/* RESULT CARD */
+.result-card{border-radius:var(--r);padding:20px;margin-top:16px}
+.result-safe{background:rgba(0,229,160,0.06);border:1px solid rgba(0,229,160,0.2)}
+.result-warn{background:rgba(255,179,0,0.06);border:1px solid rgba(255,179,0,0.2)}
+.result-danger{background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.2)}
+.result-title{font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.result-title-safe{color:var(--accent)}
+.result-title-warn{color:var(--amber)}
+.result-title-danger{color:var(--red)}
+
+/* MONO */
+.mono{font-family:var(--font-mono);font-size:12px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo-wrap">
+    <div class="logo">⬡ SENTINEL</div>
+    <div class="logo-sub">FreightOS v1.0</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Overview</div>
+    <button class="nav-item active" onclick="show('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </button>
+    <div class="nav-section">Fraud Protection</div>
+    <button class="nav-item" onclick="show('fraudshield')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+      FraudShield
+    </button>
+    <button class="nav-item" onclick="show('loadverify')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="11" y2="11"/></svg>
+      LoadVerify
+    </button>
+    <button class="nav-item" onclick="show('alerts')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      Live Alerts
+      <span class="badge badge-red" style="margin-left:auto;font-size:10px;padding:1px 7px">3</span>
+    </button>
+    <div class="nav-section">Operations</div>
+    <button class="nav-item" onclick="show('carriers')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16,8 20,8 23,11 23,16 16,16 16,8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      CarrierDNA
+    </button>
+    <button class="nav-item" onclick="show('dispatch')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+      AI Co-Pilot
+    </button>
+    <button class="nav-item" onclick="show('pnl')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Live P&L
+    </button>
+    <button class="nav-item" onclick="show('docvault')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      DocVault
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">North Star Delivery</div>
+    <span class="plan-badge">BROKER PRO</span>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="page-title" id="page-title">Dashboard</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">
+      <span class="live-dot"></span>Live
+    </div>
+    <div class="topbar-right">
+      <div class="alert-btn" onclick="show('alerts')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <div class="alert-dot"></div>
+      </div>
+      <div class="user-chip">
+        <div class="avatar">NS</div>
+        <div class="user-name">North Star</div>
+      </div>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- ═══════════════════════════════════ DASHBOARD ═══════════════════════════════════ -->
+    <div class="section active" id="dashboard">
+      <div class="grid4" style="margin-bottom:16px">
+        <div class="metric">
+          <div class="metric-label">Loads Verified</div>
+          <div class="metric-value">1,284</div>
+          <div class="metric-sub metric-up">↑ 34 today</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Fraud Blocked</div>
+          <div class="metric-value metric-dn">47</div>
+          <div class="metric-sub" style="color:var(--text2)">$218K saved</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Active Alerts</div>
+          <div class="metric-value metric-warn">3</div>
+          <div class="metric-sub metric-dn">2 critical</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Weekly Net P&L</div>
+          <div class="metric-value metric-up">$4,820</div>
+          <div class="metric-sub metric-up">↑ 12% vs last wk</div>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+            Live Fraud Alerts
+          </div>
+          <div class="alert-item" style="border-color:rgba(255,71,87,0.3)">
+            <div class="alert-icon alert-icon-red">🚨</div>
+            <div>
+              <div class="alert-title">Double Brokering Detected</div>
+              <div class="alert-body">Load #ATL-2291 posted on DAT <em>and</em> Truckstop simultaneously by two different MC numbers. Same origin/dest/pickup window.</div>
+              <div class="alert-time">2 minutes ago · MC 1847291 & MC 2091847</div>
+            </div>
+          </div>
+          <div class="alert-item" style="border-color:rgba(255,179,0,0.3)">
+            <div class="alert-icon alert-icon-amber">⚠️</div>
+            <div>
+              <div class="alert-title">New MC Authority — High Risk</div>
+              <div class="alert-body">Carrier "Express Freight LLC" MC issued 14 days ago. Insurance expires in 22 days. Remit-to address changed twice this week.</div>
+              <div class="alert-time">18 minutes ago · MC 2204871</div>
+            </div>
+          </div>
+          <div class="alert-item" style="border-color:rgba(255,179,0,0.3)">
+            <div class="alert-icon alert-icon-amber">⚠️</div>
+            <div>
+              <div class="alert-title">Rate Confirmation Alteration Suspected</div>
+              <div class="alert-body">Document hash mismatch on BOL for load #CHI-0882. Original rate $2,400. Received version shows $3,100.</div>
+              <div class="alert-time">1 hour ago · Carrier: Rapid Transit Co.</div>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px;justify-content:center" onclick="show('alerts')">View all alerts →</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+            Today's Load Activity
+          </div>
+          <table class="tbl">
+            <thead><tr><th>Load ID</th><th>Route</th><th>Rate</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td class="mono bold">#ATL-2294</td><td>Atlanta→Denver</td><td class="metric-up bold">$3,400</td><td><span class="badge badge-green"><span class="dot dot-green"></span>Verified</span></td></tr>
+              <tr><td class="mono bold">#ATL-2291</td><td>Atlanta→LA</td><td>$2,800</td><td><span class="badge badge-red"><span class="dot dot-red"></span>Blocked</span></td></tr>
+              <tr><td class="mono bold">#CHI-0882</td><td>Chicago→Dallas</td><td>$2,100</td><td><span class="badge badge-amber"><span class="dot dot-amber"></span>Review</span></td></tr>
+              <tr><td class="mono bold">#ATL-2290</td><td>Atlanta→Columbus</td><td class="metric-up bold">$650</td><td><span class="badge badge-green"><span class="dot dot-green"></span>Verified</span></td></tr>
+              <tr><td class="mono bold">#NAS-0441</td><td>Nashville→Miami</td><td class="metric-up bold">$3,900</td><td><span class="badge badge-green"><span class="dot dot-green"></span>Verified</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="card-sm">
+          <div class="card-title" style="margin-bottom:10px">Network Intelligence</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Community fraud reports — last 30 days</div>
+          <div style="margin-bottom:10px">
+            <div class="prog-label"><span style="color:var(--text2)">Double brokering</span><span style="color:var(--red)">62%</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:62%;background:var(--red)"></div></div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div class="prog-label"><span style="color:var(--text2)">Identity theft</span><span style="color:var(--amber)">24%</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:24%;background:var(--amber)"></div></div>
+          </div>
+          <div>
+            <div class="prog-label"><span style="color:var(--text2)">Fictitious pickup</span><span style="color:var(--blue)">14%</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:14%;background:var(--blue)"></div></div>
+          </div>
+        </div>
+        <div class="card-sm">
+          <div class="card-title" style="margin-bottom:10px">Top Fraud Lanes</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Highest risk corridors this week</div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px"><span style="color:var(--text)">LA → Phoenix</span><span class="badge badge-red">HIGH</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px"><span style="color:var(--text)">Chicago → Atlanta</span><span class="badge badge-red">HIGH</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px"><span style="color:var(--text)">Dallas → Miami</span><span class="badge badge-amber">MED</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px"><span style="color:var(--text)">Atlanta → NYC</span><span class="badge badge-amber">MED</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px"><span style="color:var(--text)">Seattle → Denver</span><span class="badge badge-green">LOW</span></div>
+          </div>
+        </div>
+        <div class="card-sm">
+          <div class="card-title" style="margin-bottom:10px">P&L Snapshot</div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text2)">Gross revenue</span><span style="color:var(--text);font-weight:500">$18,400</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text2)">Dispatch fees (15%)</span><span style="color:var(--red)">-$2,760</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text2)">Factoring (5%)</span><span style="color:var(--red)">-$920</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text2)">Fuel surcharge</span><span style="color:var(--red)">-$1,840</span></div>
+            <div style="border-top:1px solid var(--border);padding-top:9px;display:flex;justify-content:space-between;font-size:14px"><span style="color:var(--text);font-weight:500">Net to you</span><span style="color:var(--accent);font-weight:700;font-family:var(--font-display)">$12,880</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ FRAUDSHIELD ═══════════════════════════════════ -->
+    <div class="section" id="fraudshield">
+      <div class="grid2" style="margin-bottom:16px;align-items:start">
+        <div class="card">
+          <div class="card-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Carrier Fraud Scanner
+          </div>
+          <div class="form-row">
+            <label>MC Number or DOT Number</label>
+            <input type="text" id="mc-input" placeholder="e.g. MC 1847291 or DOT 3904812" />
+          </div>
+          <div class="form-row">
+            <label>Carrier Name (optional)</label>
+            <input type="text" id="carrier-name-input" placeholder="e.g. Express Freight LLC" />
+          </div>
+          <div class="form-row">
+            <label>Phone Number (optional — detects VoIP fraud)</label>
+            <input type="text" id="carrier-phone" placeholder="e.g. (312) 555-0192" />
+          </div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="runFraudScan()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Run Fraud Scan
+          </button>
+          <div id="fraud-result"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">What FraudShield Checks</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="width:28px;height:28px;background:var(--accent-dim);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px">🔍</div>
+              <div><div style="font-size:13px;font-weight:500;color:var(--text)">MC/DOT Authority Age</div><div style="font-size:12px;color:var(--text2)">New authorities (under 90 days) get an automatic elevated risk score</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="width:28px;height:28px;background:var(--accent-dim);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px">📋</div>
+              <div><div style="font-size:13px;font-weight:500;color:var(--text)">Insurance Verification</div><div style="font-size:12px;color:var(--text2)">Checks expiration dates, coverage gaps, and recent policy changes</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="width:28px;height:28px;background:var(--accent-dim);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px">📱</div>
+              <div><div style="font-size:13px;font-weight:500;color:var(--text)">VoIP Phone Detection</div><div style="font-size:12px;color:var(--text2)">Flags virtual phone numbers commonly used by fraudulent carriers</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="width:28px;height:28px;background:var(--accent-dim);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px">🔄</div>
+              <div><div style="font-size:13px;font-weight:500;color:var(--text)">Remit-to Address Changes</div><div style="font-size:12px;color:var(--text2)">Multiple banking/address changes in 30 days = major red flag</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="width:28px;height:28px;background:var(--accent-dim);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px">🌐</div>
+              <div><div style="font-size:13px;font-weight:500;color:var(--text)">Community Blacklist</div><div style="font-size:12px;color:var(--text2)">Cross-references 4,800+ community-reported fraud carriers</div></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="width:28px;height:28px;background:var(--accent-dim);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px">📍</div>
+              <div><div style="font-size:13px;font-weight:500;color:var(--text)">Address Validation</div><div style="font-size:12px;color:var(--text2)">Detects virtual offices, UPS stores, and mail drops as carrier addresses</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Recent Scans</div>
+        <table class="tbl">
+          <thead><tr><th>MC/DOT</th><th>Carrier Name</th><th>Scanned</th><th>Auth Age</th><th>Insurance</th><th>Blacklist</th><th>Risk Score</th><th>Verdict</th></tr></thead>
+          <tbody>
+            <tr><td class="mono bold">MC 1847291</td><td>FastLane Trucking</td><td style="color:var(--text3)">2 min ago</td><td class="metric-up">4.2 yrs</td><td class="metric-up">Valid</td><td class="metric-up">Clear</td><td><div class="risk-bar" style="width:80px"><div class="risk-fill" style="width:18%;background:var(--accent)"></div></div></td><td><span class="badge badge-green">SAFE</span></td></tr>
+            <tr><td class="mono bold">MC 2204871</td><td>Express Freight LLC</td><td style="color:var(--text3)">18 min ago</td><td class="metric-dn">14 days</td><td class="metric-warn">22 days left</td><td class="metric-up">Clear</td><td><div class="risk-bar" style="width:80px"><div class="risk-fill" style="width:78%;background:var(--amber)"></div></div></td><td><span class="badge badge-amber">CAUTION</span></td></tr>
+            <tr><td class="mono bold">DOT 9912044</td><td>Shadow Carrier LLC</td><td style="color:var(--text3)">1 hr ago</td><td class="metric-dn">3 days</td><td class="metric-dn">Expired</td><td class="metric-dn">LISTED</td><td><div class="risk-bar" style="width:80px"><div class="risk-fill" style="width:96%;background:var(--red)"></div></div></td><td><span class="badge badge-red">FRAUD</span></td></tr>
+            <tr><td class="mono bold">MC 1090344</td><td>Reliable Haul Inc.</td><td style="color:var(--text3)">3 hr ago</td><td class="metric-up">8.1 yrs</td><td class="metric-up">Valid</td><td class="metric-up">Clear</td><td><div class="risk-bar" style="width:80px"><div class="risk-fill" style="width:9%;background:var(--accent)"></div></div></td><td><span class="badge badge-green">SAFE</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ LOAD VERIFY ═══════════════════════════════════ -->
+    <div class="section" id="loadverify">
+      <div class="grid2" style="margin-bottom:16px;align-items:start">
+        <div class="card">
+          <div class="card-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+            Double-Booking Detector
+          </div>
+          <div class="form-grid">
+            <div class="form-row"><label>Origin City</label><input type="text" id="lv-origin" placeholder="e.g. Atlanta, GA" /></div>
+            <div class="form-row"><label>Destination City</label><input type="text" id="lv-dest" placeholder="e.g. Los Angeles, CA" /></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-row"><label>Pickup Date</label><input type="date" id="lv-date" /></div>
+            <div class="form-row"><label>Pickup Window</label><input type="text" id="lv-window" placeholder="e.g. 8am–2pm" /></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-row"><label>Weight (lbs)</label><input type="number" id="lv-weight" placeholder="e.g. 4000" /></div>
+            <div class="form-row"><label>Rate ($)</label><input type="number" id="lv-rate" placeholder="e.g. 3400" /></div>
+          </div>
+          <div class="form-row"><label>Commodity / Notes</label><input type="text" id="lv-commodity" placeholder="e.g. dry van, general freight" /></div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="runLoadVerify()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+            Verify This Load
+          </button>
+          <div id="lv-result"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">How Double Booking Works</div>
+          <div style="background:var(--surface2);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.7">
+            A fraudulent broker takes your load and <strong style="color:var(--amber)">re-posts it on multiple load boards</strong> under a different MC number. The original carrier picks up the freight. A second "carrier" shows up to steal it. By the time you figure it out, the cargo is gone and you owe the shipper.<br><br>
+            LoadVerify scans DAT, Truckstop, and private boards in real-time, <strong style="color:var(--accent)">cross-referencing origin, destination, pickup window, and commodity</strong> to detect the same load posted in multiple places simultaneously.
+          </div>
+          <div class="card-title" style="margin-bottom:10px">Boards Monitored</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px"><span style="color:var(--accent)">●</span>DAT Load Board</div>
+            <div style="background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px"><span style="color:var(--accent)">●</span>Truckstop.com</div>
+            <div style="background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px"><span style="color:var(--accent)">●</span>uShip</div>
+            <div style="background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px"><span style="color:var(--accent)">●</span>123Loadboard</div>
+            <div style="background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px"><span style="color:var(--accent)">●</span>Convoy</div>
+            <div style="background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px"><span style="color:var(--accent)">●</span>Direct Posts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ ALERTS ═══════════════════════════════════ -->
+    <div class="section" id="alerts">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:13px;color:var(--text2)"><span class="live-dot"></span>3 active alerts requiring attention</div>
+        <button class="btn btn-ghost btn-sm">Mark all read</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--surface);border:1px solid rgba(255,71,87,0.35);border-radius:var(--r);padding:18px 20px">
+          <div style="display:flex;align-items:flex-start;gap:14px">
+            <div style="width:40px;height:40px;background:var(--red-dim);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">🚨</div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+                <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--red)">CRITICAL: Double Brokering Detected</span>
+                <span class="badge badge-red">CRITICAL</span>
+              </div>
+              <div style="font-size:13px;color:var(--text);margin-bottom:6px">Load #ATL-2291 — Atlanta, GA → Los Angeles, CA — 2,200 miles — $2,800</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7">This load is currently posted on <strong style="color:var(--red)">both DAT and Truckstop</strong> under two different MC numbers. MC 1847291 posted it at 9:14 AM. MC 2091847 reposted it at 9:22 AM with an identical pickup window and weight. This is a textbook double-brokering setup. Do not release this load to either carrier without verification.</div>
+              <div style="margin-top:10px;display:flex;gap:8px">
+                <button class="btn btn-danger btn-sm">Block This Load</button>
+                <button class="btn btn-ghost btn-sm">Report to FMCSA</button>
+                <button class="btn btn-ghost btn-sm">Investigate</button>
+              </div>
+              <div class="alert-time" style="margin-top:8px">Detected 2 minutes ago · Sentinel FraudShield + LoadVerify</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid rgba(255,179,0,0.3);border-radius:var(--r);padding:18px 20px">
+          <div style="display:flex;align-items:flex-start;gap:14px">
+            <div style="width:40px;height:40px;background:var(--amber-dim);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">⚠️</div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+                <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--amber)">WARNING: New MC Authority — High Risk</span>
+                <span class="badge badge-amber">HIGH RISK</span>
+              </div>
+              <div style="font-size:13px;color:var(--text);margin-bottom:6px">Carrier: Express Freight LLC · MC 2204871</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7">This carrier's MC authority was issued just <strong style="color:var(--amber)">14 days ago</strong>. Their cargo insurance expires in 22 days. The remit-to banking address has been changed <strong style="color:var(--amber)">twice in the last 7 days</strong> — a pattern associated with identity theft fraud where scammers take over existing carrier identities to redirect payments. Proceed with extreme caution.</div>
+              <div style="margin-top:10px;display:flex;gap:8px">
+                <button class="btn btn-ghost btn-sm" onclick="show('carriers')">View CarrierDNA Profile</button>
+                <button class="btn btn-ghost btn-sm">Call to Verify</button>
+                <button class="btn btn-danger btn-sm">Flag & Block</button>
+              </div>
+              <div class="alert-time" style="margin-top:8px">Detected 18 minutes ago · CarrierDNA Monitor</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid rgba(255,179,0,0.3);border-radius:var(--r);padding:18px 20px">
+          <div style="display:flex;align-items:flex-start;gap:14px">
+            <div style="width:40px;height:40px;background:var(--amber-dim);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">📄</div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+                <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--amber)">WARNING: Rate Confirmation Alteration</span>
+                <span class="badge badge-amber">REVIEW</span>
+              </div>
+              <div style="font-size:13px;color:var(--text);margin-bottom:6px">Load #CHI-0882 — Chicago, IL → Dallas, TX · Carrier: Rapid Transit Co.</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7">DocVault has detected a <strong style="color:var(--amber)">hash mismatch</strong> on the rate confirmation for this load. The original document saved at booking shows a rate of <strong style="color:var(--accent)">$2,400</strong>. The version received from the carrier for payment shows <strong style="color:var(--red)">$3,100</strong> — a $700 discrepancy. This could be a clerical error or intentional alteration. Do not process payment until verified.</div>
+              <div style="margin-top:10px;display:flex;gap:8px">
+                <button class="btn btn-ghost btn-sm" onclick="show('docvault')">View in DocVault</button>
+                <button class="btn btn-ghost btn-sm">Compare Documents</button>
+                <button class="btn btn-danger btn-sm">Dispute Payment</button>
+              </div>
+              <div class="alert-time" style="margin-top:8px">Detected 1 hour ago · DocVault Hash Check</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ CARRIER DNA ═══════════════════════════════════ -->
+    <div class="section" id="carriers">
+      <div class="grid2" style="margin-bottom:16px;align-items:start">
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-title">Carrier Search</div>
+            <div class="form-row"><input type="text" placeholder="Search by name, MC, or DOT..." /></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="background:var(--surface2);border-radius:var(--r-sm);padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between" onclick="showCarrier()">
+                <div><div style="font-size:13px;font-weight:500;color:var(--text)">FastLane Trucking Inc.</div><div class="mono" style="color:var(--text3);margin-top:2px">MC 1847291 · DOT 3881290</div></div>
+                <span class="badge badge-green">SAFE · 92</span>
+              </div>
+              <div style="background:var(--surface2);border-radius:var(--r-sm);padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">
+                <div><div style="font-size:13px;font-weight:500;color:var(--text)">Reliable Haul Inc.</div><div class="mono" style="color:var(--text3);margin-top:2px">MC 1090344 · DOT 2911044</div></div>
+                <span class="badge badge-green">SAFE · 88</span>
+              </div>
+              <div style="background:var(--surface2);border-radius:var(--r-sm);padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">
+                <div><div style="font-size:13px;font-weight:500;color:var(--text)">Express Freight LLC</div><div class="mono" style="color:var(--text3);margin-top:2px">MC 2204871 · DOT 4012984</div></div>
+                <span class="badge badge-amber">CAUTION · 38</span>
+              </div>
+              <div style="background:var(--surface2);border-radius:var(--r-sm);padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">
+                <div><div style="font-size:13px;font-weight:500;color:var(--text)">Shadow Carrier LLC</div><div class="mono" style="color:var(--text3);margin-top:2px">DOT 9912044</div></div>
+                <span class="badge badge-red">FRAUD · 4</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card" id="carrier-detail">
+          <div style="text-align:center;padding:20px;color:var(--text3)">
+            <div style="font-size:32px;margin-bottom:8px">🚛</div>
+            <div style="font-size:13px">Select a carrier to view their full DNA profile</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ AI CO-PILOT ═══════════════════════════════════ -->
+    <div class="section" id="dispatch">
+      <div class="grid2" style="align-items:start">
+        <div class="card">
+          <div class="card-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Analyze This Load
+          </div>
+          <div class="form-grid">
+            <div class="form-row"><label>Origin</label><input type="text" id="co-origin" placeholder="Atlanta, GA" /></div>
+            <div class="form-row"><label>Destination</label><input type="text" id="co-dest" placeholder="Denver, CO" /></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-row"><label>Load Miles</label><input type="number" id="co-miles" placeholder="1,420" /></div>
+            <div class="form-row"><label>Deadhead Miles</label><input type="number" id="co-dh" placeholder="45" /></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-row"><label>Gross Rate ($)</label><input type="number" id="co-rate" placeholder="2800" /></div>
+            <div class="form-row"><label>Weight (lbs)</label><input type="number" id="co-weight" placeholder="4000" /></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-row"><label>Dispatch % Takeout</label><input type="number" id="co-disp" placeholder="15" /></div>
+            <div class="form-row"><label>Factoring %</label><input type="number" id="co-fact" placeholder="5" /></div>
+          </div>
+          <div class="form-row"><label>Fuel Cost ($/gal)</label><input type="number" id="co-fuel" placeholder="3.89" step="0.01"/></div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="analyzLoad()">
+            Analyze with AI Co-Pilot
+          </button>
+          <div id="copilot-result"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Co-Pilot Intelligence</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">The AI Co-Pilot analyzes every load against current market rates, your historical lane performance, and real-time fuel prices — then gives you an instant verdict with a suggested counter-offer if the rate is below market.</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="background:var(--surface2);border-radius:var(--r-sm);padding:12px"><div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:3px">Real Market Rate Check</div><div style="font-size:12px;color:var(--text2)">Compares against current national spot rates for your lane and equipment type</div></div>
+            <div style="background:var(--surface2);border-radius:var(--r-sm);padding:12px"><div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:3px">True Net Calculator</div><div style="font-size:12px;color:var(--text2)">Strips out dispatch %, factoring, fuel, and deadhead to show you what you actually keep</div></div>
+            <div style="background:var(--surface2);border-radius:var(--r-sm);padding:12px"><div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:3px">Counter-Offer Generator</div><div style="font-size:12px;color:var(--text2)">If the rate is below market, suggests the minimum rate to make it worth running</div></div>
+            <div style="background:var(--surface2);border-radius:var(--r-sm);padding:12px"><div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:3px">Reload Market Intel</div><div style="font-size:12px;color:var(--text2)">Rates the reload market at destination so you know what to expect for the next load</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ P&L ═══════════════════════════════════ -->
+    <div class="section" id="pnl">
+      <div class="grid4" style="margin-bottom:16px">
+        <div class="metric"><div class="metric-label">This Week Gross</div><div class="metric-value">$18,400</div><div class="metric-sub metric-up">↑ 8% vs last week</div></div>
+        <div class="metric"><div class="metric-label">Total Deductions</div><div class="metric-value metric-dn">$5,520</div><div class="metric-sub" style="color:var(--text2)">Dispatch + factoring + fuel</div></div>
+        <div class="metric"><div class="metric-label">Net to Owner</div><div class="metric-value metric-up">$12,880</div><div class="metric-sub metric-up">↑ $1,240 vs last week</div></div>
+        <div class="metric"><div class="metric-label">Loads This Week</div><div class="metric-value">11</div><div class="metric-sub" style="color:var(--text2)">Avg $1,171 net/load</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Load-by-Load P&L — This Week</div>
+        <table class="tbl">
+          <thead><tr><th>Load</th><th>Route</th><th>Driver</th><th>Gross</th><th>Dispatch</th><th>Factoring</th><th>Fuel Est.</th><th>Net</th><th>RPM Net</th></tr></thead>
+          <tbody>
+            <tr><td class="mono bold">#ATL-2294</td><td>ATL→DEN</td><td style="color:var(--text2)">Bernard B.</td><td>$3,400</td><td class="metric-dn">-$510</td><td class="metric-dn">-$170</td><td class="metric-dn">-$310</td><td class="metric-up bold">$2,410</td><td class="metric-up">$1.69</td></tr>
+            <tr><td class="mono bold">#NAS-0441</td><td>NSH→MIA</td><td style="color:var(--text2)">Jett S.</td><td>$3,900</td><td class="metric-dn">-$468</td><td class="metric-dn">-$195</td><td class="metric-dn">-$280</td><td class="metric-up bold">$2,957</td><td class="metric-up">$1.89</td></tr>
+            <tr><td class="mono bold">#ATL-2290</td><td>ATL→CLM</td><td style="color:var(--text2)">Bernard B.</td><td>$650</td><td class="metric-dn">-$98</td><td class="metric-dn">-$33</td><td class="metric-dn">-$55</td><td class="metric-up bold">$465</td><td class="metric-up">$2.87</td></tr>
+            <tr><td class="mono bold">#CHI-0880</td><td>CHI→DAL</td><td style="color:var(--text2)">Myeisha D.</td><td>$2,800</td><td class="metric-dn">-$336</td><td class="metric-dn">-$140</td><td class="metric-dn">-$260</td><td class="metric-up bold">$2,064</td><td class="metric-up">$1.72</td></tr>
+            <tr style="background:rgba(0,229,160,0.03)"><td colspan="3" style="font-weight:500;color:var(--text)">WEEK TOTAL</td><td style="font-weight:500;color:var(--text)">$18,400</td><td class="metric-dn bold">-$2,760</td><td class="metric-dn bold">-$920</td><td class="metric-dn bold">-$1,840</td><td class="metric-up bold" style="font-size:15px;font-family:var(--font-display)">$12,880</td><td class="metric-up bold">$1.79</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ DOC VAULT ═══════════════════════════════════ -->
+    <div class="section" id="docvault">
+      <div class="grid2" style="margin-bottom:16px;align-items:start">
+        <div class="card">
+          <div class="card-title">Upload Document</div>
+          <div style="border:2px dashed var(--border2);border-radius:var(--r);padding:32px;text-align:center;margin-bottom:14px;cursor:pointer" onclick="fakeUpload()">
+            <div style="font-size:28px;margin-bottom:8px">📄</div>
+            <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px">Drop file here or click to upload</div>
+            <div style="font-size:12px;color:var(--text3)">Rate confirmations, BOLs, PODs, contracts</div>
+          </div>
+          <div id="upload-result"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Document Health</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border-radius:var(--r-sm)">
+              <div><div style="font-size:13px;color:var(--text);font-weight:500">Rate Con #ATL-2294</div><div class="mono" style="color:var(--text3);font-size:11px">Hash: a4f2c91e · Uploaded 8:42 AM</div></div>
+              <span class="badge badge-green">✓ Verified</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border-radius:var(--r-sm)">
+              <div><div style="font-size:13px;color:var(--text);font-weight:500">BOL #CHI-0882</div><div class="mono" style="color:var(--text3);font-size:11px">Hash: MISMATCH · Received 11:15 AM</div></div>
+              <span class="badge badge-red">⚠ Altered</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border-radius:var(--r-sm)">
+              <div><div style="font-size:13px;color:var(--text);font-weight:500">POD #NAS-0441</div><div class="mono" style="color:var(--text3);font-size:11px">Hash: f9d3a022 · Uploaded 6:30 AM</div></div>
+              <span class="badge badge-green">✓ Verified</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border-radius:var(--r-sm)">
+              <div><div style="font-size:13px;color:var(--text);font-weight:500">Contract: Bernard Brooks</div><div class="mono" style="color:var(--text3);font-size:11px">Hash: 8b1e4cd7 · Signed 4/9/2026</div></div>
+              <span class="badge badge-green">✓ Verified</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+const titles = {dashboard:'Dashboard',fraudshield:'FraudShield — Carrier Fraud Scanner',loadverify:'LoadVerify — Double-Booking Detector',alerts:'Live Alerts',carriers:'CarrierDNA — Carrier Profiles',dispatch:'AI Dispatch Co-Pilot',pnl:'Live P&L Tracker',docvault:'DocVault — Document Security'};
+
+function show(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('page-title').textContent = titles[id] || id;
+  const btns = document.querySelectorAll('.nav-item');
+  btns.forEach(b => { if(b.getAttribute('onclick') && b.getAttribute('onclick').includes("'"+id+"'")) b.classList.add('active'); });
+}
+
+function runFraudScan() {
+  const mc = document.getElementById('mc-input').value.trim();
+  const name = document.getElementById('carrier-name-input').value.trim() || 'Unknown Carrier';
+  if(!mc){document.getElementById('fraud-result').innerHTML='<div style="margin-top:12px;padding:10px 12px;background:var(--red-dim);border-radius:var(--r-sm);font-size:12px;color:var(--red)">Please enter an MC or DOT number.</div>';return;}
+  const el = document.getElementById('fraud-result');
+  el.innerHTML = '<div style="margin-top:16px;padding:20px;background:var(--surface2);border-radius:var(--r);text-align:center;position:relative;overflow:hidden"><div class="scan-line"></div><div style="font-size:12px;color:var(--text2);margin-bottom:6px">Scanning databases...</div><div style="font-size:11px;color:var(--text3)">FMCSA · Carrier411 · Community Blacklist · Insurance DB</div></div>';
+  const num = mc.replace(/\D/g,'');
+  const seed = num ? parseInt(num.slice(-3)) : Math.floor(Math.random()*100);
+  setTimeout(() => {
+    let score, verdict, cls, checks;
+    if(seed > 800) { score=96; verdict='FRAUD'; cls='danger'; checks=[{l:'MC Authority Age',v:'3 days',s:'red'},{l:'Insurance Status',v:'Expired',s:'red'},{l:'Blacklist Status',v:'⚠ LISTED',s:'red'},{l:'Remit-to Changes',v:'4 in 7 days',s:'red'},{l:'Phone Type',v:'VoIP detected',s:'red'}]; }
+    else if(seed > 600) { score=45; verdict='CAUTION'; cls='warn'; checks=[{l:'MC Authority Age',v:'18 days',s:'amber'},{l:'Insurance Status',v:'Valid – expires 22 days',s:'amber'},{l:'Blacklist Status',v:'Clear',s:'green'},{l:'Remit-to Changes',v:'2 in 30 days',s:'amber'},{l:'Phone Type',v:'Mobile',s:'green'}]; }
+    else { score=91; verdict='SAFE'; cls='safe'; checks=[{l:'MC Authority Age',v:'4.2 years',s:'green'},{l:'Insurance Status',v:'Valid – expires 8/2026',s:'green'},{l:'Blacklist Status',v:'Clear',s:'green'},{l:'Remit-to Changes',v:'None in 90 days',s:'green'},{l:'Phone Type',v:'Landline',s:'green'}]; }
+    const colorMap = {red:'var(--red)',amber:'var(--amber)',green:'var(--accent)'};
+    el.innerHTML = `<div class="result-card result-${cls}" style="margin-top:14px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+        <div style="text-align:center"><div class="result-title result-title-${cls}">${score}</div><div style="font-size:10px;color:var(--text3);letter-spacing:.06em">RISK SCORE</div></div>
+        <div><div class="result-title result-title-${cls}" style="font-size:18px">${verdict}</div><div style="font-size:12px;color:var(--text2)">${name} · ${mc}</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">${checks.map(c=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:var(--text2)">${c.l}</span><span style="color:${colorMap[c.s]};font-weight:500">${c.v}</span></div>`).join('')}</div>
+    </div>`;
+  }, 2200);
+}
+
+function runLoadVerify() {
+  const origin = document.getElementById('lv-origin').value.trim();
+  const dest = document.getElementById('lv-dest').value.trim();
+  if(!origin||!dest){document.getElementById('lv-result').innerHTML='<div style="margin-top:12px;padding:10px 12px;background:var(--red-dim);border-radius:var(--r-sm);font-size:12px;color:var(--red)">Please enter origin and destination.</div>';return;}
+  const el = document.getElementById('lv-result');
+  el.innerHTML='<div style="margin-top:14px;padding:16px;background:var(--surface2);border-radius:var(--r);text-align:center;position:relative;overflow:hidden"><div class="scan-line"></div><div style="font-size:12px;color:var(--text2)">Scanning 6 load boards for duplicate postings...</div></div>';
+  const risk = Math.random();
+  setTimeout(()=>{
+    if(risk > 0.65) {
+      el.innerHTML=`<div class="result-card result-danger" style="margin-top:14px">
+        <div class="result-title result-title-danger" style="font-size:16px;margin-bottom:6px">⚠ DOUBLE BOOKING DETECTED</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px">${origin} → ${dest} — This exact load was found on multiple boards</div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:12px">
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,71,87,0.15)"><span style="color:var(--text2)">DAT Load Board</span><span style="color:var(--red)">Found — MC 1847291 posted 9:14 AM</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,71,87,0.15)"><span style="color:var(--text2)">Truckstop.com</span><span style="color:var(--red)">Found — MC 2091847 posted 9:22 AM</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--text2)">Same pickup window</span><span style="color:var(--red)">Yes — both show 8am–2pm</span></div>
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--red);font-weight:500">DO NOT RELEASE THIS LOAD. Report both MC numbers to FMCSA.</div>
+      </div>`;
+    } else {
+      el.innerHTML=`<div class="result-card result-safe" style="margin-top:14px">
+        <div class="result-title result-title-safe" style="font-size:16px;margin-bottom:6px">✓ LOAD IS CLEAN</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px">${origin} → ${dest} — No duplicate postings found</div>
+        <div style="display:flex;flex-direction:column;gap:5px;font-size:12px">
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,229,160,0.12)"><span style="color:var(--text2)">DAT Load Board</span><span style="color:var(--accent)">Clear</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,229,160,0.12)"><span style="color:var(--text2)">Truckstop.com</span><span style="color:var(--accent)">Clear</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,229,160,0.12)"><span style="color:var(--text2)">uShip & others</span><span style="color:var(--accent)">Clear</span></div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:var(--text2)">Community reports</span><span style="color:var(--accent)">None on this lane</span></div>
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--accent);font-weight:500">Safe to proceed. Load verified at ${new Date().toLocaleTimeString()}.</div>
+      </div>`;
+    }
+  }, 2400);
+}
+
+function analyzLoad() {
+  const miles = parseFloat(document.getElementById('co-miles').value)||0;
+  const dh = parseFloat(document.getElementById('co-dh').value)||0;
+  const rate = parseFloat(document.getElementById('co-rate').value)||0;
+  const disp = parseFloat(document.getElementById('co-disp').value)||15;
+  const fact = parseFloat(document.getElementById('co-fact').value)||5;
+  const fuel = parseFloat(document.getElementById('co-fuel').value)||3.89;
+  const origin = document.getElementById('co-origin').value||'Origin';
+  const dest = document.getElementById('co-dest').value||'Destination';
+  if(!miles||!rate){document.getElementById('copilot-result').innerHTML='<div style="margin-top:12px;padding:10px 12px;background:var(--red-dim);border-radius:var(--r-sm);font-size:12px;color:var(--red)">Please enter load miles and gross rate.</div>';return;}
+  const totalMiles = miles + dh;
+  const grossRPM = rate / miles;
+  const dispAmt = rate * (disp/100);
+  const factAmt = rate * (fact/100);
+  const fuelGal = totalMiles / 8;
+  const fuelCost = fuelGal * fuel;
+  const net = rate - dispAmt - factAmt - fuelCost;
+  const netRPM = net / miles;
+  const marketRate = 2.45;
+  const isGood = grossRPM >= 1.75 && netRPM >= 1.00;
+  const isGreat = grossRPM >= 2.20;
+  let verdict, cls, suggest = '';
+  if(isGreat){verdict='TAKE IT';cls='safe';}
+  else if(isGood){verdict='DECENT';cls='warn';}
+  else{verdict='PASS OR COUNTER';cls='danger';suggest=`Suggested counter-offer: <strong style="color:var(--accent)">$${Math.round(miles*1.85).toLocaleString()}</strong> (target $1.85/loaded mile net)`;}
+  document.getElementById('copilot-result').innerHTML=`<div class="result-card result-${cls}" style="margin-top:14px">
+    <div class="result-title result-title-${cls}" style="font-size:18px;margin-bottom:2px">${verdict}</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">${origin} → ${dest}</div>
+    <div style="display:flex;flex-direction:column;gap:5px;font-size:12px">
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><span style="color:var(--text2)">Gross rate</span><span style="color:var(--text)">$${rate.toLocaleString()} ($${grossRPM.toFixed(2)}/mi loaded)</span></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><span style="color:var(--text2)">Dispatch (${disp}%)</span><span style="color:var(--red)">-$${dispAmt.toFixed(0)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><span style="color:var(--text2)">Factoring (${fact}%)</span><span style="color:var(--red)">-$${factAmt.toFixed(0)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><span style="color:var(--text2)">Fuel est. (${totalMiles} total mi)</span><span style="color:var(--red)">-$${fuelCost.toFixed(0)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:13px;font-weight:500"><span style="color:var(--text)">NET TO YOU</span><span style="color:var(--accent);font-family:var(--font-display);font-size:16px">$${net.toFixed(0)} ($${netRPM.toFixed(2)}/mi)</span></div>
+    </div>
+    ${suggest?`<div style="margin-top:10px;font-size:12px;color:var(--text2)">${suggest}</div>`:''}
+    <div style="margin-top:10px;font-size:11px;color:var(--text3)">Market avg for this type: $${marketRate}/mi · Deadhead: ${dh} miles · Total miles: ${totalMiles}</div>
+  </div>`;
+}
+
+function showCarrier() {
+  document.getElementById('carrier-detail').innerHTML=`
+    <div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+        <div style="width:44px;height:44px;background:var(--accent-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--accent)">FT</div>
+        <div><div style="font-size:15px;font-weight:600;color:var(--text);font-family:var(--font-display)">FastLane Trucking Inc.</div><div class="mono" style="color:var(--text3);font-size:11px;margin-top:2px">MC 1847291 · DOT 3881290</div></div>
+        <span class="badge badge-green" style="margin-left:auto;font-size:13px;padding:5px 12px">92 SAFE</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        <div style="background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px"><div style="font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Authority Age</div><div style="font-size:14px;font-weight:600;color:var(--accent);font-family:var(--font-display)">4.2 Years</div></div>
+        <div style="background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px"><div style="font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Insurance Exp.</div><div style="font-size:14px;font-weight:600;color:var(--accent);font-family:var(--font-display)">Aug 2026</div></div>
+        <div style="background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px"><div style="font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">FMCSA Safety</div><div style="font-size:14px;font-weight:600;color:var(--accent);font-family:var(--font-display)">Satisfactory</div></div>
+        <div style="background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px"><div style="font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Loads With You</div><div style="font-size:14px;font-weight:600;color:var(--text);font-family:var(--font-display)">12 loads</div></div>
+      </div>
+      <div class="card-title" style="font-size:12px;margin-bottom:8px">Your History With This Carrier</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.8">12 loads completed · 0 issues · Average on-time: 98% · No payment disputes · Last used: 3 days ago on ATL→DEN run</div>
+      <div style="margin-top:12px"><span class="badge badge-green">No fraud reports</span>&nbsp;<span class="badge badge-green">Remit-to stable</span>&nbsp;<span class="badge badge-blue">Preferred carrier</span></div>
+    </div>`;
+}
+
+function fakeUpload() {
+  const el = document.getElementById('upload-result');
+  el.innerHTML='<div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:var(--r-sm);font-size:12px;color:var(--text2)">Processing document hash...</div>';
+  setTimeout(()=>{
+    el.innerHTML=`<div style="margin-top:12px;padding:14px;background:var(--accent-dim);border-radius:var(--r-sm)">
+      <div style="font-size:13px;font-weight:500;color:var(--accent);margin-bottom:4px">✓ Document Secured</div>
+      <div style="font-size:12px;color:var(--text2)">Hash generated: <span class="mono">e7f2a401b9c3</span></div>
+      <div style="font-size:12px;color:var(--text2);margin-top:3px">Any future alteration will be detected instantly.</div>
+    </div>`;
+  }, 1800);
+}
+
+// Set today's date as default
+document.getElementById('lv-date').valueAsDate = new Date();
+</script>
+</body>
+</html>
