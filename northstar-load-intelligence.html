@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NorthStar Load Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#050608;--black2:#080A0D;--black3:#0C0F14;
+  --surface:#111620;--surface2:#161D2A;--surface3:#1C2330;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);--border3:rgba(255,255,255,0.16);
+  --gold:#C9A84C;--gold2:#E8C97A;--gold3:#A07830;
+  --gold-dim:rgba(201,168,76,0.08);--gold-dim2:rgba(201,168,76,0.15);
+  --green:#2DD4A0;--green-dim:rgba(45,212,160,0.10);
+  --red:#FF5A5A;--red-dim:rgba(255,90,90,0.10);
+  --amber:#FFB300;--amber-dim:rgba(255,179,0,0.10);
+  --text:#E8E4DC;--text2:#8A8880;--text3:#3A3830;
+  --fd:'Cormorant Garamond',serif;
+  --fb:'DM Sans',sans-serif;
+  --fm:'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--black);color:var(--text);font-family:var(--fb);font-size:13px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+
+/* LAYOUT */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:230px;flex-shrink:0;background:var(--black2);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100}
+.main{margin-left:230px;flex:1;min-height:100vh;display:flex;flex-direction:column}
+.topbar{height:56px;background:var(--black2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50;flex-shrink:0}
+.content{padding:24px 28px;flex:1}
+
+/* SIDEBAR */
+.logo-wrap{padding:20px 18px 14px;border-bottom:1px solid var(--border)}
+.logo{font-family:var(--fd);font-size:17px;font-weight:500;color:#F4F1EB;letter-spacing:.08em;text-transform:uppercase}
+.logo span{color:var(--gold)}
+.logo-sub{font-size:9px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-top:3px}
+.plan-tag{display:inline-flex;align-items:center;background:var(--gold-dim2);color:var(--gold);font-size:9px;font-weight:500;padding:2px 9px;border-radius:20px;letter-spacing:.06em;margin-top:8px;font-family:var(--fd)}
+nav{padding:12px 10px;flex:1;overflow-y:auto}
+.ns{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;padding:6px 8px 3px;margin-top:8px}
+.ni{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:6px;cursor:pointer;color:var(--text2);font-size:12px;transition:all .15s;margin-bottom:1px;border:none;background:none;width:100%;text-align:left}
+.ni:hover{background:var(--surface);color:var(--text)}
+.ni.active{background:var(--gold-dim2);color:var(--gold);font-weight:500}
+.ni svg{width:14px;height:14px;flex-shrink:0;opacity:.7;flex-shrink:0}
+.ni.active svg{opacity:1}
+.sb-footer{padding:14px 16px;border-top:1px solid var(--border)}
+
+/* TOPBAR */
+.pt{font-family:var(--fd);font-size:15px;font-weight:500;letter-spacing:-.01em;color:var(--text)}
+.tbr{margin-left:auto;display:flex;align-items:center;gap:10px}
+.score-chip{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border2);padding:5px 12px;border-radius:20px;font-size:11px;color:var(--text2)}
+.score-chip span{color:var(--gold);font-weight:500;font-family:var(--fd);font-size:14px}
+
+/* SECTIONS */
+.sec{display:none}.sec.active{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px}
+.card-gold{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;position:relative;overflow:hidden}
+.card-gold::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.ct{font-family:var(--fd);font-size:13px;font-weight:500;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;letter-spacing:-.01em}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* METRIC TILES */
+.met{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.ml{font-size:10px;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px}
+.mv{font-family:var(--fd);font-size:26px;font-weight:500;letter-spacing:-.02em}
+.ms{font-size:11px;color:var(--text2);margin-top:3px}
+.pos{color:var(--green)}.neg{color:var(--red)}.warn{color:var(--amber)}.gold{color:var(--gold)}
+
+/* FORM */
+label{font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:5px}
+input,select{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--fb);font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s;width:100%}
+input:focus,select:focus{border-color:var(--gold)}
+input::placeholder{color:var(--text3)}
+select option{background:var(--black3)}
+.fr{margin-bottom:12px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:6px;font-family:var(--fb);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;border:none}
+.btn-gold{background:var(--gold);color:#040D08}.btn-gold:hover{background:var(--gold2)}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2)}.btn-ghost:hover{color:var(--text);background:var(--surface2)}
+.btn-block{display:block;width:100%;text-align:center;justify-content:center}
+
+/* VERDICT */
+.verdict-box{border-radius:10px;padding:20px;margin-top:16px;border:1px solid transparent}
+.v-take{background:var(--green-dim);border-color:rgba(45,212,160,0.25)}
+.v-negotiate{background:var(--amber-dim);border-color:rgba(255,179,0,0.25)}
+.v-pass{background:var(--red-dim);border-color:rgba(255,90,90,0.25)}
+.verdict-title{font-family:var(--fd);font-size:28px;font-weight:500;letter-spacing:-.01em;margin-bottom:6px}
+.vt-take{color:var(--green)}.vt-neg{color:var(--amber)}.vt-pass{color:var(--red)}
+
+/* BREAKDOWN */
+.breakdown{display:flex;flex-direction:column;gap:0;margin-top:14px;border-top:1px solid var(--border)}
+.br-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px}
+.br-row:last-child{border:none;padding-top:10px}
+.br-label{color:var(--text2)}
+.br-val{font-weight:500;color:var(--text)}
+.br-val.pos{color:var(--green)}.br-val.neg{color:var(--red)}.br-val.gold{color:var(--gold)}
+
+/* PROGRESS BAR */
+.prog{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin:6px 0}
+.prog-fill{height:100%;border-radius:2px;transition:width 1s ease}
+
+/* HISTORY TABLE */
+.htbl{width:100%;border-collapse:collapse}
+.htbl th{text-align:left;font-size:9px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)}
+.htbl td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:12px;color:var(--text2)}
+.htbl tr:hover td{background:rgba(255,255,255,0.02);color:var(--text)}
+.htbl tr:last-child td{border-bottom:none}
+.bold{font-weight:500;color:var(--text)!important}
+.mono{font-family:var(--fm);font-size:11px}
+
+/* SCORECARD */
+.score-ring{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px}
+.ring-num{font-family:var(--fd);font-size:64px;font-weight:300;letter-spacing:-.04em;line-height:1}
+.ring-label{font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-top:8px}
+.lane-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.lane-row:last-child{border:none}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500}
+.bg{background:var(--green-dim);color:var(--green)}
+.br2{background:var(--red-dim);color:var(--red)}
+.ba{background:var(--amber-dim);color:var(--amber)}
+.bgold{background:var(--gold-dim2);color:var(--gold)}
+
+/* EXPENSE */
+.exp-row{display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:6px;background:var(--surface2);margin-bottom:6px;font-size:12px}
+.exp-cat{display:inline-flex;align-items:center;gap:6px}
+.exp-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* LIVE DOT */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite;margin-right:5px}
+
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo-wrap">
+    <div class="logo">North<span>Star</span></div>
+    <div class="logo-sub">Load Intelligence</div>
+    <div class="plan-tag">Pro · $29/month</div>
+  </div>
+  <nav>
+    <div class="ns">Tools</div>
+    <button class="ni active" onclick="show('analyze')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+      Load Analyzer
+    </button>
+    <button class="ni" onclick="show('breakeven')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Break-Even Calculator
+    </button>
+    <button class="ni" onclick="show('counter')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Counter-Offer Generator
+    </button>
+    <div class="ns">Tracking</div>
+    <button class="ni" onclick="show('pnl')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+      Weekly P&L
+    </button>
+    <button class="ni" onclick="show('expenses')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      Expense Logger
+    </button>
+    <div class="ns">Intelligence</div>
+    <button class="ni" onclick="show('scorecard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Performance Scorecard
+    </button>
+    <button class="ni" onclick="show('history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      Load History
+    </button>
+  </nav>
+  <div class="sb-footer">
+    <div style="font-size:10px;color:var(--text3)">This week</div>
+    <div style="font-family:var(--fd);font-size:18px;font-weight:500;color:var(--green);margin-top:2px" id="sb-net">$0</div>
+    <div style="font-size:10px;color:var(--text3);margin-top:1px">net earnings</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+<div class="topbar">
+  <div class="pt" id="pt">Load Analyzer</div>
+  <div style="font-size:11px;color:var(--text2);display:flex;align-items:center"><span class="ldot"></span>Live</div>
+  <div class="tbr">
+    <div class="score-chip">Week Score <span id="week-score">—</span></div>
+    <div style="font-size:11px;font-family:var(--fm);color:var(--text3)" id="clock"></div>
+  </div>
+</div>
+<div class="content">
+
+<!-- ══════════ LOAD ANALYZER ══════════ -->
+<div class="sec active" id="analyze">
+  <div class="g2" style="align-items:start">
+    <div>
+      <div class="card-gold" style="margin-bottom:12px">
+        <div class="ct">Enter Load Details</div>
+        <div class="fg">
+          <div class="fr"><label>Origin City</label><input type="text" id="a-origin" placeholder="Atlanta, GA"/></div>
+          <div class="fr"><label>Destination City</label><input type="text" id="a-dest" placeholder="Denver, CO"/></div>
+        </div>
+        <div class="fg3">
+          <div class="fr"><label>Gross Rate ($)</label><input type="number" id="a-rate" placeholder="2800"/></div>
+          <div class="fr"><label>Load Miles</label><input type="number" id="a-miles" placeholder="1420"/></div>
+          <div class="fr"><label>Deadhead Miles</label><input type="number" id="a-dh" placeholder="45"/></div>
+        </div>
+        <div class="fg3">
+          <div class="fr"><label>Dispatch % Out</label><input type="number" id="a-disp" placeholder="15"/></div>
+          <div class="fr"><label>Factoring %</label><input type="number" id="a-fact" placeholder="5"/></div>
+          <div class="fr"><label>Fuel ($/gal)</label><input type="number" id="a-fuel" placeholder="3.89" step="0.01"/></div>
+        </div>
+        <div class="fg">
+          <div class="fr"><label>Equipment Type</label>
+            <select id="a-equip">
+              <option>Dry Van 53ft</option>
+              <option>Flatbed</option>
+              <option>Reefer</option>
+              <option>Box Truck 26ft</option>
+              <option>Hotshot</option>
+              <option>Lowboy/RGN</option>
+              <option>Tanker</option>
+            </select>
+          </div>
+          <div class="fr"><label>MPG (your truck)</label><input type="number" id="a-mpg" placeholder="7" step="0.5"/></div>
+        </div>
+        <div class="fg" style="margin-top:4px">
+          <button class="btn btn-gold btn-block" onclick="analyzeLoad()">Analyze This Load</button>
+          <button class="btn btn-ghost btn-block" onclick="saveLoad()">Save to History</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div id="analyze-result">
+        <div class="card" style="text-align:center;padding:48px 20px">
+          <div style="font-family:var(--fd);font-size:48px;font-weight:300;color:var(--text3);margin-bottom:12px">—</div>
+          <div style="font-size:13px;color:var(--text3)">Enter load details and click Analyze</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ BREAK-EVEN ══════════ -->
+<div class="sec" id="breakeven">
+  <div class="g2" style="align-items:start">
+    <div class="card-gold">
+      <div class="ct">Your Cost Structure</div>
+      <div class="fr"><label>Truck Payment ($/month)</label><input type="number" id="be-truck" placeholder="2200"/></div>
+      <div class="fr"><label>Insurance ($/month)</label><input type="number" id="be-ins" placeholder="1400"/></div>
+      <div class="fr"><label>Phone / ELD / Tools ($/month)</label><input type="number" id="be-tools" placeholder="180"/></div>
+      <div class="fr"><label>Other Fixed Costs ($/month)</label><input type="number" id="be-other" placeholder="400"/></div>
+      <div class="fr"><label>Fuel Price ($/gal)</label><input type="number" id="be-fuel" placeholder="3.89" step="0.01"/></div>
+      <div class="fr"><label>Your MPG</label><input type="number" id="be-mpg" placeholder="7" step="0.5"/></div>
+      <div class="fr"><label>Target Miles Per Week</label><input type="number" id="be-miles" placeholder="2500"/></div>
+      <div class="fr"><label>Dispatch % Takeout</label><input type="number" id="be-disp" placeholder="15"/></div>
+      <button class="btn btn-gold btn-block" style="margin-top:4px" onclick="calcBreakeven()">Calculate Break-Even</button>
+    </div>
+    <div id="be-result">
+      <div class="card" style="text-align:center;padding:48px 20px">
+        <div style="font-family:var(--fd);font-size:48px;font-weight:300;color:var(--text3);margin-bottom:12px">—</div>
+        <div style="font-size:13px;color:var(--text3)">Enter your costs to see your break-even rate</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ COUNTER OFFER ══════════ -->
+<div class="sec" id="counter">
+  <div class="g2" style="align-items:start">
+    <div class="card-gold">
+      <div class="ct">Generate Counter-Offer</div>
+      <div class="fg">
+        <div class="fr"><label>Origin</label><input type="text" id="co-origin" placeholder="Chicago, IL"/></div>
+        <div class="fr"><label>Destination</label><input type="text" id="co-dest" placeholder="Dallas, TX"/></div>
+      </div>
+      <div class="fg">
+        <div class="fr"><label>Broker's Offer ($)</label><input type="number" id="co-offer" placeholder="1800"/></div>
+        <div class="fr"><label>Load Miles</label><input type="number" id="co-miles" placeholder="920"/></div>
+      </div>
+      <div class="fg">
+        <div class="fr"><label>Dispatch %</label><input type="number" id="co-disp" placeholder="15"/></div>
+        <div class="fr"><label>Factoring %</label><input type="number" id="co-fact" placeholder="5"/></div>
+      </div>
+      <div class="fg">
+        <div class="fr"><label>Fuel ($/gal)</label><input type="number" id="co-fuel" placeholder="3.89" step="0.01"/></div>
+        <div class="fr"><label>Your MPG</label><input type="number" id="co-mpg" placeholder="7" step="0.5"/></div>
+      </div>
+      <div class="fr"><label>Your Name (for script)</label><input type="text" id="co-name" placeholder="Marcus"/></div>
+      <button class="btn btn-gold btn-block" style="margin-top:4px" onclick="generateCounter()">Generate Counter-Offer Script</button>
+    </div>
+    <div id="co-result">
+      <div class="card" style="text-align:center;padding:48px 20px">
+        <div style="font-family:var(--fd);font-size:48px;font-weight:300;color:var(--text3);margin-bottom:12px">—</div>
+        <div style="font-size:13px;color:var(--text3)">Enter load details to generate your counter-offer script</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ WEEKLY P&L ══════════ -->
+<div class="sec" id="pnl">
+  <div class="g4" style="margin-bottom:14px">
+    <div class="met"><div class="ml">Gross Revenue</div><div class="mv gold" id="pnl-gross">$0</div><div class="ms">This week</div></div>
+    <div class="met"><div class="ml">Total Deductions</div><div class="mv neg" id="pnl-deduct">$0</div><div class="ms">Dispatch + fuel + fees</div></div>
+    <div class="met"><div class="ml">Net to You</div><div class="mv pos" id="pnl-net">$0</div><div class="ms">After everything</div></div>
+    <div class="met"><div class="ml">Net Per Mile</div><div class="mv" id="pnl-rpm" style="color:var(--text)">$0.00</div><div class="ms">Loaded miles</div></div>
+  </div>
+  <div class="g2" style="align-items:start">
+    <div class="card-gold">
+      <div class="ct">Add Load to This Week</div>
+      <div class="fg">
+        <div class="fr"><label>Load ID / Reference</label><input type="text" id="pnl-id" placeholder="ATL-2291"/></div>
+        <div class="fr"><label>Route</label><input type="text" id="pnl-route" placeholder="ATL → DEN"/></div>
+      </div>
+      <div class="fg3">
+        <div class="fr"><label>Gross Rate ($)</label><input type="number" id="pnl-rate" placeholder="3400"/></div>
+        <div class="fr"><label>Miles</label><input type="number" id="pnl-miles" placeholder="1420"/></div>
+        <div class="fr"><label>Dispatch %</label><input type="number" id="pnl-disp" placeholder="15"/></div>
+      </div>
+      <div class="fg3">
+        <div class="fr"><label>Factoring %</label><input type="number" id="pnl-fact" placeholder="5"/></div>
+        <div class="fr"><label>Fuel Cost ($)</label><input type="number" id="pnl-fuel-cost" placeholder="310"/></div>
+        <div class="fr"><label>Other Costs ($)</label><input type="number" id="pnl-other" placeholder="0"/></div>
+      </div>
+      <button class="btn btn-gold btn-block" onclick="addPnlLoad()">Add Load</button>
+    </div>
+    <div class="card">
+      <div class="ct">This Week's Loads <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="clearWeek()">Clear Week</button></div>
+      <table class="htbl" id="pnl-table">
+        <thead><tr><th>Load</th><th>Route</th><th>Gross</th><th>Net</th><th>$/mi</th></tr></thead>
+        <tbody id="pnl-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">No loads added yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ EXPENSES ══════════ -->
+<div class="sec" id="expenses">
+  <div class="g2" style="align-items:start">
+    <div class="card-gold">
+      <div class="ct">Log Expense</div>
+      <div class="fr"><label>Category</label>
+        <select id="exp-cat">
+          <option value="fuel">Fuel</option>
+          <option value="tolls">Tolls</option>
+          <option value="maintenance">Maintenance / Repairs</option>
+          <option value="meals">Meals (Per Diem)</option>
+          <option value="lodging">Lodging</option>
+          <option value="scales">Scales / Weigh Stations</option>
+          <option value="permits">Permits / Licenses</option>
+          <option value="insurance">Insurance</option>
+          <option value="phone">Phone / ELD / Tools</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="fg">
+        <div class="fr"><label>Amount ($)</label><input type="number" id="exp-amount" placeholder="0.00" step="0.01"/></div>
+        <div class="fr"><label>Date</label><input type="date" id="exp-date"/></div>
+      </div>
+      <div class="fr"><label>Notes (optional)</label><input type="text" id="exp-notes" placeholder="e.g. Pilot Travel Center — I-75 mile 220"/></div>
+      <button class="btn btn-gold btn-block" onclick="addExpense()">Log Expense</button>
+    </div>
+    <div>
+      <div class="g2" style="margin-bottom:12px">
+        <div class="met"><div class="ml">Total This Month</div><div class="mv neg" id="exp-total">$0</div></div>
+        <div class="met"><div class="ml">Deductible Estimate</div><div class="mv pos" id="exp-deduct">$0</div><div class="ms">IRS deductible</div></div>
+      </div>
+      <div class="card">
+        <div class="ct">Expense Log <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="clearExpenses()">Clear</button></div>
+        <div id="exp-list" style="max-height:340px;overflow-y:auto">
+          <div style="text-align:center;color:var(--text3);padding:20px;font-size:12px">No expenses logged yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SCORECARD ══════════ -->
+<div class="sec" id="scorecard">
+  <div class="g4" style="margin-bottom:14px">
+    <div class="met"><div class="ml">Loads Analyzed</div><div class="mv gold" id="sc-analyzed">0</div></div>
+    <div class="met"><div class="ml">Acceptance Rate</div><div class="mv" id="sc-accept" style="color:var(--text)">—</div><div class="ms">Loads taken vs passed</div></div>
+    <div class="met"><div class="ml">Avg Net / Mile</div><div class="mv" id="sc-rpm" style="color:var(--text)">—</div><div class="ms">All saved loads</div></div>
+    <div class="met"><div class="ml">Best Lane</div><div class="mv gold" id="sc-best" style="font-size:14px;margin-top:4px">—</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ct">Performance Over Time</div>
+      <div id="sc-chart" style="padding:20px 0">
+        <div style="text-align:center;color:var(--text3);font-size:12px;padding:40px">Analyze and save loads to build your scorecard</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Top Performing Lanes</div>
+      <div id="sc-lanes">
+        <div style="text-align:center;color:var(--text3);font-size:12px;padding:40px">No lane data yet</div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="ct">Weekly Performance Trend</div>
+    <div id="sc-weekly" style="padding:12px 0">
+      <div style="text-align:center;color:var(--text3);font-size:12px;padding:20px">Save loads across multiple weeks to see your trend</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ HISTORY ══════════ -->
+<div class="sec" id="history">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div style="font-size:12px;color:var(--text2)" id="hist-count">0 loads saved</div>
+    <button class="btn btn-ghost" style="font-size:11px" onclick="clearHistory()">Clear History</button>
+  </div>
+  <div class="card">
+    <table class="htbl">
+      <thead><tr><th>Date</th><th>Route</th><th>Equipment</th><th>Gross</th><th>Net</th><th>$/mi Net</th><th>Verdict</th></tr></thead>
+      <tbody id="hist-tbody">
+        <tr><td colspan="7" style="text-align:center;color:var(--text3);padding:28px">No loads saved yet — analyze a load and click Save to History</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+// ── STATE ──────────────────────────────────────────
+const titles={analyze:'Load Analyzer',breakeven:'Break-Even Calculator',counter:'Counter-Offer Generator',pnl:'Weekly P&L Tracker',expenses:'Expense Logger',scorecard:'Performance Scorecard',history:'Load History'};
+
+function show(id){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('pt').textContent=titles[id]||id;
+  document.querySelectorAll('.ni').forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+id+"'"))b.classList.add('active');});
+}
+
+// ── STORAGE ────────────────────────────────────────
+function save(key,val){try{localStorage.setItem('ns_'+key,JSON.stringify(val));}catch(e){}}
+function load(key,def){try{const v=localStorage.getItem('ns_'+key);return v?JSON.parse(v):def;}catch(e){return def;}}
+
+let loadHistory=load('history',[]);
+let pnlLoads=load('pnl',[]);
+let expenses=load('expenses',[]);
+let lastAnalysis=null;
+
+// ── CLOCK ──────────────────────────────────────────
+function tick(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+setInterval(tick,1000);tick();
+
+// ── HELPERS ────────────────────────────────────────
+function fmtD(n){return'$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function fmtD2(n){return'$'+n.toFixed(2);}
+function calcNet(rate,miles,dh,disp,fact,fuel,mpg){
+  const total=miles+(dh||0);
+  const dispAmt=rate*(disp/100);
+  const factAmt=rate*(fact/100);
+  const fuelCost=(total/(mpg||7))*fuel;
+  return{net:rate-dispAmt-factAmt-fuelCost,dispAmt,factAmt,fuelCost,total,rpm:(rate-dispAmt-factAmt-fuelCost)/miles,grossRpm:rate/miles};
+}
+
+// ── LOAD ANALYZER ──────────────────────────────────
+function analyzeLoad(){
+  const rate=parseFloat(document.getElementById('a-rate').value)||0;
+  const miles=parseFloat(document.getElementById('a-miles').value)||0;
+  const dh=parseFloat(document.getElementById('a-dh').value)||0;
+  const disp=parseFloat(document.getElementById('a-disp').value)||15;
+  const fact=parseFloat(document.getElementById('a-fact').value)||5;
+  const fuel=parseFloat(document.getElementById('a-fuel').value)||3.89;
+  const mpg=parseFloat(document.getElementById('a-mpg').value)||7;
+  const origin=document.getElementById('a-origin').value||'Origin';
+  const dest=document.getElementById('a-dest').value||'Destination';
+  const equip=document.getElementById('a-equip').value;
+
+  if(!rate||!miles){
+    document.getElementById('analyze-result').innerHTML='<div class="card" style="text-align:center;padding:28px;color:var(--red)">Please enter at least a gross rate and load miles.</div>';
+    return;
+  }
+
+  const {net,dispAmt,factAmt,fuelCost,total,rpm,grossRpm}=calcNet(rate,miles,dh,disp,fact,fuel,mpg);
+  const market=equip.includes('Lowboy')||equip.includes('Tanker')?3.20:equip.includes('Reefer')?2.80:equip.includes('Flatbed')?2.60:2.45;
+
+  let vClass,vTitle,vColor,vMsg;
+  if(rpm>=1.75){vClass='v-take';vTitle='TAKE IT';vColor='vt-take';vMsg='This load meets your profitability threshold. The rate is solid and the numbers work in your favor.';}
+  else if(rpm>=1.20){vClass='v-negotiate';vTitle='NEGOTIATE';vColor='vt-neg';vMsg=`Counter at ${fmtD(Math.round(miles*1.85))} to improve your margin. Current net is below optimal for this lane.`;}
+  else{vClass='v-pass';vTitle='PASS OR COUNTER';vColor='vt-pass';vMsg=`Minimum acceptable rate for this load is ${fmtD(Math.round(miles*1.85))}. At current offer your net per mile is too low.`;}
+
+  lastAnalysis={date:new Date().toLocaleDateString(),route:`${origin} → ${dest}`,equip,rate,miles,dh,disp,fact,fuel,mpg,net,rpm,verdict:vTitle};
+
+  document.getElementById('analyze-result').innerHTML=`
+    <div class="card-gold" style="margin-bottom:12px">
+      <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">${equip}</div>
+      <div style="font-family:var(--fd);font-size:15px;font-weight:500;color:var(--text);margin-bottom:14px">${origin} → ${dest}</div>
+      <div class="verdict-box ${vClass}">
+        <div class="verdict-title ${vColor}">${vTitle}</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">${vMsg}</div>
+      </div>
+      <div class="breakdown">
+        <div class="br-row"><span class="br-label">Gross rate</span><span class="br-val gold">${fmtD(rate)} · ${fmtD2(grossRpm)}/mi</span></div>
+        <div class="br-row"><span class="br-label">Dispatch (${disp}%)</span><span class="br-val neg">-${fmtD(dispAmt)}</span></div>
+        <div class="br-row"><span class="br-label">Factoring (${fact}%)</span><span class="br-val neg">-${fmtD(factAmt)}</span></div>
+        <div class="br-row"><span class="br-label">Fuel (${total} mi @ ${mpg}mpg)</span><span class="br-val neg">-${fmtD(fuelCost)}</span></div>
+        <div class="br-row" style="font-size:13px"><span class="br-label" style="color:var(--text);font-weight:500">Net to you</span><span class="br-val ${rpm>=1.75?'pos':rpm>=1.20?'warn':'neg'}" style="font-size:16px;font-family:var(--fd)">${fmtD(net)} · ${fmtD2(rpm)}/mi</span></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;font-size:11px;color:var(--text3);font-family:var(--fm)">
+        <span>Market avg: ${fmtD2(market)}/mi</span>
+        <span>·</span>
+        <span>DH: ${dh} mi</span>
+        <span>·</span>
+        <span>Total: ${total} mi</span>
+      </div>
+    </div>
+    <button class="btn btn-gold btn-block" onclick="saveLoad()">Save to Load History</button>`;
+
+  updateScorecard();
+}
+
+// ── BREAK-EVEN ─────────────────────────────────────
+function calcBreakeven(){
+  const truck=parseFloat(document.getElementById('be-truck').value)||0;
+  const ins=parseFloat(document.getElementById('be-ins').value)||0;
+  const tools=parseFloat(document.getElementById('be-tools').value)||0;
+  const other=parseFloat(document.getElementById('be-other').value)||0;
+  const fuel=parseFloat(document.getElementById('be-fuel').value)||3.89;
+  const mpg=parseFloat(document.getElementById('be-mpg').value)||7;
+  const miles=parseFloat(document.getElementById('be-miles').value)||2500;
+  const disp=parseFloat(document.getElementById('be-disp').value)||15;
+
+  const monthlyFixed=truck+ins+tools+other;
+  const weeklyFixed=monthlyFixed/4.33;
+  const fuelCostWeek=(miles/mpg)*fuel;
+  const totalWeekly=weeklyFixed+fuelCostWeek;
+  const grossNeeded=totalWeekly/(1-(disp/100)-0.05);
+  const rpmNeeded=grossNeeded/miles;
+  const profitTarget=grossNeeded*1.25;
+
+  document.getElementById('be-result').innerHTML=`
+    <div class="card-gold" style="margin-bottom:12px">
+      <div style="text-align:center;padding:20px 0 14px">
+        <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Your Break-Even Rate</div>
+        <div style="font-family:var(--fd);font-size:52px;font-weight:300;color:var(--gold);letter-spacing:-.02em">${fmtD2(rpmNeeded)}<span style="font-size:18px;color:var(--text2);font-family:var(--fb);font-weight:300">/mile</span></div>
+        <div style="font-size:13px;color:var(--text2);margin-top:6px">Minimum gross: ${fmtD(grossNeeded)}/week</div>
+      </div>
+      <div class="breakdown">
+        <div class="br-row"><span class="br-label">Weekly fixed costs</span><span class="br-val neg">-${fmtD(weeklyFixed)}</span></div>
+        <div class="br-row"><span class="br-label">Fuel (${miles} mi @ ${mpg}mpg)</span><span class="br-val neg">-${fmtD(fuelCostWeek)}</span></div>
+        <div class="br-row"><span class="br-label">Total weekly costs</span><span class="br-val neg">-${fmtD(totalWeekly)}</span></div>
+        <div class="br-row"><span class="br-label">Break-even gross needed</span><span class="br-val warn">${fmtD(grossNeeded)}</span></div>
+        <div class="br-row"><span class="br-label">Profitable target (25% margin)</span><span class="br-val pos">${fmtD(profitTarget)}</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Rate Targets by Lane Length</div>
+      <div class="breakdown">
+        ${[500,800,1000,1200,1500].map(m=>`
+        <div class="br-row">
+          <span class="br-label">${m} mile load</span>
+          <span class="br-val gold">min ${fmtD(Math.round(m*rpmNeeded))} · target ${fmtD(Math.round(m*rpmNeeded*1.25))}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── COUNTER OFFER ──────────────────────────────────
+function generateCounter(){
+  const offer=parseFloat(document.getElementById('co-offer').value)||0;
+  const miles=parseFloat(document.getElementById('co-miles').value)||0;
+  const disp=parseFloat(document.getElementById('co-disp').value)||15;
+  const fact=parseFloat(document.getElementById('co-fact').value)||5;
+  const fuel=parseFloat(document.getElementById('co-fuel').value)||3.89;
+  const mpg=parseFloat(document.getElementById('co-mpg').value)||7;
+  const name=document.getElementById('co-name').value||'';
+  const origin=document.getElementById('co-origin').value||'Origin';
+  const dest=document.getElementById('co-dest').value||'Destination';
+
+  if(!offer||!miles){
+    document.getElementById('co-result').innerHTML='<div class="card" style="padding:20px;color:var(--red);font-size:12px">Please enter the broker\'s offer and load miles.</div>';
+    return;
+  }
+
+  const {net:offerNet,rpm:offerRpm}=calcNet(offer,miles,0,disp,fact,fuel,mpg);
+  const targetRpm=1.85;
+  const counterRate=Math.round(miles*targetRpm/(1-(disp/100)-(fact/100)));
+  const {net:counterNet}=calcNet(counterRate,miles,0,disp,fact,fuel,mpg);
+  const diff=counterRate-offer;
+  const pct=Math.round((diff/offer)*100);
+
+  document.getElementById('co-result').innerHTML=`
+    <div class="card-gold" style="margin-bottom:12px">
+      <div class="g2" style="gap:10px;margin-bottom:14px">
+        <div style="background:var(--red-dim);border:1px solid rgba(255,90,90,0.2);padding:14px;border-radius:8px;text-align:center">
+          <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Their Offer</div>
+          <div style="font-family:var(--fd);font-size:28px;font-weight:500;color:var(--red)">${fmtD(offer)}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:4px">Net to you: ${fmtD(offerNet)}</div>
+        </div>
+        <div style="background:var(--green-dim);border:1px solid rgba(45,212,160,0.2);padding:14px;border-radius:8px;text-align:center">
+          <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Your Counter</div>
+          <div style="font-family:var(--fd);font-size:28px;font-weight:500;color:var(--green)">${fmtD(counterRate)}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:4px">Net to you: ${fmtD(counterNet)}</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text2);text-align:center;margin-bottom:16px">Counter is ${fmtD(diff)} (+${pct}%) above their offer</div>
+    </div>
+    <div class="card">
+      <div class="ct">Word-for-Word Script</div>
+      <div style="background:var(--surface2);border-radius:8px;padding:16px;font-size:12px;color:var(--text2);line-height:2;font-family:var(--fm)">
+        <div style="color:var(--text3);font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Say or send this exactly:</div>
+        "${name?name+' here':'Hey'} — I appreciate the load. ${origin} to ${dest}, ${miles} miles. At ${fmtD(offer)} my net after fuel and fees puts me below what I need to run this lane profitably. I can do it at <strong style="color:var(--gold)">${fmtD(counterRate)}</strong>. That works for both of us and I can have a driver confirmed within the hour. Can you get me to ${fmtD(counterRate)}?"
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--text3)">Based on $1.85/net mile target after ${disp}% dispatch, ${fact}% factoring, and fuel at $${fuel}/gal.</div>
+    </div>`;
+}
+
+// ── P&L TRACKER ────────────────────────────────────
+function addPnlLoad(){
+  const id=document.getElementById('pnl-id').value||'Load';
+  const route=document.getElementById('pnl-route').value||'—';
+  const rate=parseFloat(document.getElementById('pnl-rate').value)||0;
+  const miles=parseFloat(document.getElementById('pnl-miles').value)||1;
+  const disp=parseFloat(document.getElementById('pnl-disp').value)||15;
+  const fact=parseFloat(document.getElementById('pnl-fact').value)||5;
+  const fuelCost=parseFloat(document.getElementById('pnl-fuel-cost').value)||0;
+  const otherCost=parseFloat(document.getElementById('pnl-other').value)||0;
+
+  if(!rate){return;}
+  const dispAmt=rate*(disp/100);
+  const factAmt=rate*(fact/100);
+  const net=rate-dispAmt-factAmt-fuelCost-otherCost;
+  const rpm=net/miles;
+
+  pnlLoads.push({id,route,rate,miles,disp,fact,fuelCost,otherCost,net,rpm});
+  save('pnl',pnlLoads);
+  renderPnl();
+
+  ['pnl-id','pnl-route','pnl-rate','pnl-miles','pnl-fuel-cost','pnl-other'].forEach(f=>document.getElementById(f).value='');
+}
+
+function renderPnl(){
+  const gross=pnlLoads.reduce((a,l)=>a+l.rate,0);
+  const deduct=pnlLoads.reduce((a,l)=>a+(l.rate-l.net),0);
+  const net=pnlLoads.reduce((a,l)=>a+l.net,0);
+  const totalMiles=pnlLoads.reduce((a,l)=>a+l.miles,0);
+  const rpm=totalMiles>0?net/totalMiles:0;
+
+  document.getElementById('pnl-gross').textContent=fmtD(gross);
+  document.getElementById('pnl-deduct').textContent=fmtD(deduct);
+  document.getElementById('pnl-net').textContent=fmtD(net);
+  document.getElementById('pnl-rpm').textContent=fmtD2(rpm);
+  document.getElementById('sb-net').textContent=fmtD(net);
+
+  const tbody=document.getElementById('pnl-tbody');
+  if(!pnlLoads.length){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">No loads added yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML=pnlLoads.map((l,i)=>`
+    <tr>
+      <td class="bold mono">${l.id}</td>
+      <td>${l.route}</td>
+      <td class="gold bold">${fmtD(l.rate)}</td>
+      <td class="${l.net>0?'pos':'neg'} bold">${fmtD(l.net)}</td>
+      <td class="mono ${l.rpm>=1.75?'pos':l.rpm>=1.20?'warn':'neg'}">${fmtD2(l.rpm)}</td>
+    </tr>`).join('');
+
+  updateWeekScore();
+}
+
+function clearWeek(){if(confirm('Clear this week\'s loads?')){pnlLoads=[];save('pnl',[]);renderPnl();}}
+
+function updateWeekScore(){
+  if(!pnlLoads.length){document.getElementById('week-score').textContent='—';return;}
+  const totalMiles=pnlLoads.reduce((a,l)=>a+l.miles,0);
+  const net=pnlLoads.reduce((a,l)=>a+l.net,0);
+  const rpm=totalMiles>0?net/totalMiles:0;
+  const score=Math.min(100,Math.round((rpm/2.50)*100));
+  document.getElementById('week-score').textContent=score;
+  document.getElementById('week-score').style.color=score>=70?'var(--green)':score>=50?'var(--amber)':'var(--red)';
+}
+
+// ── EXPENSES ───────────────────────────────────────
+function addExpense(){
+  const cat=document.getElementById('exp-cat').value;
+  const amount=parseFloat(document.getElementById('exp-amount').value)||0;
+  const date=document.getElementById('exp-date').value||new Date().toLocaleDateString();
+  const notes=document.getElementById('exp-notes').value||'';
+  if(!amount)return;
+
+  const deductible=['fuel','tolls','maintenance','meals','lodging','scales','permits','phone'].includes(cat);
+  expenses.push({cat,amount,date,notes,deductible});
+  save('expenses',expenses);
+  renderExpenses();
+  document.getElementById('exp-amount').value='';
+  document.getElementById('exp-notes').value='';
+}
+
+const catColors={fuel:'#C9A84C',tolls:'#4A9FFF',maintenance:'#FF5A5A',meals:'#2DD4A0',lodging:'#A78BFA',scales:'#FFB300',permits:'#FF8C69',insurance:'#FF4757',phone:'#45B7D1',other:'#8A8880'};
+
+function renderExpenses(){
+  const total=expenses.reduce((a,e)=>a+e.amount,0);
+  const deduct=expenses.filter(e=>e.deductible).reduce((a,e)=>a+e.amount,0);
+  document.getElementById('exp-total').textContent=fmtD(total);
+  document.getElementById('exp-deduct').textContent=fmtD(deduct);
+
+  const el=document.getElementById('exp-list');
+  if(!expenses.length){el.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;font-size:12px">No expenses logged yet</div>';return;}
+  el.innerHTML=[...expenses].reverse().map((e,i)=>`
+    <div class="exp-row">
+      <div class="exp-cat">
+        <div class="exp-dot" style="background:${catColors[e.cat]||'#8A8880'}"></div>
+        <div>
+          <div style="font-weight:500;color:var(--text);text-transform:capitalize">${e.cat}</div>
+          ${e.notes?`<div style="font-size:11px;color:var(--text3)">${e.notes}</div>`:''}
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:500;color:var(--red)">${fmtD2(e.amount)}</div>
+        <div style="font-size:10px;color:${e.deductible?'var(--green)':'var(--text3)'}">${e.deductible?'Deductible':'—'}</div>
+      </div>
+    </div>`).join('');
+}
+
+function clearExpenses(){if(confirm('Clear all expenses?')){expenses=[];save('expenses',[]);renderExpenses();}}
+
+// ── SAVE LOAD TO HISTORY ───────────────────────────
+function saveLoad(){
+  if(!lastAnalysis){alert('Analyze a load first.');return;}
+  loadHistory.push(lastAnalysis);
+  save('history',loadHistory);
+  renderHistory();
+  updateScorecard();
+  alert('Load saved to history.');
+}
+
+function renderHistory(){
+  document.getElementById('hist-count').textContent=loadHistory.length+' load'+(loadHistory.length!==1?'s':'')+' saved';
+  const tbody=document.getElementById('hist-tbody');
+  if(!loadHistory.length){
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:28px">No loads saved yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML=[...loadHistory].reverse().map(l=>`
+    <tr>
+      <td class="mono" style="color:var(--text3)">${l.date}</td>
+      <td class="bold">${l.route}</td>
+      <td style="color:var(--text2)">${l.equip||'—'}</td>
+      <td class="gold bold">${fmtD(l.rate)}</td>
+      <td class="${l.net>0?'pos':'neg'} bold">${fmtD(l.net)}</td>
+      <td class="mono ${l.rpm>=1.75?'pos':l.rpm>=1.20?'warn':'neg'}">${fmtD2(l.rpm)}</td>
+      <td><span class="badge ${l.verdict==='TAKE IT'?'bg':l.verdict==='NEGOTIATE'?'ba':'br2'}">${l.verdict}</span></td>
+    </tr>`).join('');
+}
+
+function clearHistory(){if(confirm('Clear all load history?')){loadHistory=[];save('history',[]);renderHistory();updateScorecard();}}
+
+// ── SCORECARD ──────────────────────────────────────
+function updateScorecard(){
+  const total=loadHistory.length;
+  document.getElementById('sc-analyzed').textContent=total;
+
+  if(!total){
+    document.getElementById('sc-accept').textContent='—';
+    document.getElementById('sc-rpm').textContent='—';
+    document.getElementById('sc-best').textContent='—';
+    return;
+  }
+
+  const taken=loadHistory.filter(l=>l.verdict==='TAKE IT').length;
+  const accept=Math.round((taken/total)*100)+'%';
+  const avgRpm=(loadHistory.reduce((a,l)=>a+l.rpm,0)/total).toFixed(2);
+
+  document.getElementById('sc-accept').textContent=accept;
+  document.getElementById('sc-accept').style.color=taken/total>=0.6?'var(--green)':'var(--amber)';
+  document.getElementById('sc-rpm').textContent='$'+avgRpm+'/mi';
+  document.getElementById('sc-rpm').style.color=parseFloat(avgRpm)>=1.75?'var(--green)':parseFloat(avgRpm)>=1.20?'var(--amber)':'var(--red)';
+
+  // Best lane
+  const lanes={};
+  loadHistory.forEach(l=>{if(!lanes[l.route])lanes[l.route]={count:0,totalRpm:0};lanes[l.route].count++;lanes[l.route].totalRpm+=l.rpm;});
+  const bestLane=Object.entries(lanes).sort((a,b)=>(b[1].totalRpm/b[1].count)-(a[1].totalRpm/a[1].count))[0];
+  document.getElementById('sc-best').textContent=bestLane?bestLane[0]:'—';
+
+  // Chart
+  const last8=[...loadHistory].slice(-8);
+  const maxNet=Math.max(...last8.map(l=>l.net),1);
+  document.getElementById('sc-chart').innerHTML=`
+    <div style="display:flex;align-items:flex-end;gap:6px;height:80px;padding:0 4px">
+      ${last8.map(l=>`
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+          <div style="width:100%;height:${Math.round((l.net/maxNet)*72)}px;background:${l.rpm>=1.75?'var(--green)':l.rpm>=1.20?'var(--amber)':'var(--red)'};border-radius:2px 2px 0 0;min-height:4px" title="${fmtD(l.net)}"></div>
+        </div>`).join('')}
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:var(--text3);font-family:var(--fm);padding:0 4px">
+      ${last8.map(l=>`<span>${l.date.split('/').slice(0,2).join('/')}</span>`).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:8px;text-align:center">Last ${last8.length} loads · Net earnings per load</div>`;
+
+  // Lanes
+  const topLanes=Object.entries(lanes).sort((a,b)=>(b[1].totalRpm/b[1].count)-(a[1].totalRpm/a[1].count)).slice(0,5);
+  document.getElementById('sc-lanes').innerHTML=topLanes.length?topLanes.map(([lane,data])=>{
+    const avgR=(data.totalRpm/data.count).toFixed(2);
+    const pct=Math.min(100,Math.round((parseFloat(avgR)/2.50)*100));
+    return`<div class="lane-row">
+      <div style="flex:1"><div style="font-size:12px;font-weight:500;color:var(--text)">${lane}</div><div style="font-size:10px;color:var(--text3)">${data.count} load${data.count!==1?'s':''}</div></div>
+      <div style="text-align:right"><div style="font-size:13px;font-weight:500;color:${parseFloat(avgR)>=1.75?'var(--green)':parseFloat(avgR)>=1.20?'var(--amber)':'var(--red)'}">$${avgR}/mi</div></div>
+    </div>`;
+  }).join(''):'<div style="text-align:center;color:var(--text3);font-size:12px;padding:20px">Save loads to see your top lanes</div>';
+}
+
+// ── INIT ───────────────────────────────────────────
+document.getElementById('exp-date').valueAsDate=new Date();
+renderPnl();
+renderExpenses();
+renderHistory();
+updateScorecard();
+updateWeekScore();
+</script>
+</body>
+</html>
