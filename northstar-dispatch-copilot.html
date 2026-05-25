@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NorthStar Dispatch Co-Pilot</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#050608;--black2:#080A0D;--surface:#111620;--surface2:#161D2A;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);
+  --gold:#C9A84C;--gold2:#E8C97A;--gold-dim2:rgba(201,168,76,0.15);
+  --green:#2DD4A0;--green-dim:rgba(45,212,160,0.10);
+  --red:#FF5A5A;--red-dim:rgba(255,90,90,0.10);
+  --amber:#FFB300;--amber-dim:rgba(255,179,0,0.10);
+  --text:#E8E4DC;--text2:#8A8880;--text3:#3A3830;
+  --fd:'Cormorant Garamond',serif;--fb:'DM Sans',sans-serif;--fm:'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--black);color:var(--text);font-family:var(--fb);font-size:13px;line-height:1.6;min-height:100vh}
+.shell{display:flex;min-height:100vh}
+.sidebar{width:220px;flex-shrink:0;background:var(--black2);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column}
+.topbar{height:54px;background:var(--black2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:50}
+.content{padding:22px 24px;flex:1}
+.logo-wrap{padding:18px 16px 12px;border-bottom:1px solid var(--border)}
+.logo{font-family:var(--fd);font-size:16px;font-weight:500;color:#F4F1EB;letter-spacing:.08em;text-transform:uppercase}
+.logo span{color:var(--gold)}
+.logo-sub{font-size:9px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-top:3px}
+.plan-tag{display:inline-flex;background:var(--gold-dim2);color:var(--gold);font-size:9px;padding:2px 9px;border-radius:20px;letter-spacing:.06em;margin-top:7px;font-family:var(--fd)}
+nav{padding:10px 8px;flex:1}
+.ns{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;padding:6px 8px 3px;margin-top:6px}
+.ni{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:6px;cursor:pointer;color:var(--text2);font-size:12px;transition:all .15s;margin-bottom:1px;border:none;background:none;width:100%;text-align:left}
+.ni:hover{background:var(--surface);color:var(--text)}
+.ni.active{background:var(--gold-dim2);color:var(--gold);font-weight:500}
+.ni svg{width:14px;height:14px;flex-shrink:0;opacity:.7}
+.ni.active svg{opacity:1}
+.sb-footer{padding:12px 14px;border-top:1px solid var(--border)}
+.pt{font-family:var(--fd);font-size:15px;font-weight:500;color:var(--text)}
+.tbr{margin-left:auto;display:flex;align-items:center;gap:10px}
+.sec{display:none}.sec.active{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px}
+.card-gold{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;position:relative;overflow:hidden}
+.card-gold::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.ct{font-family:var(--fd);font-size:13px;font-weight:500;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+label{font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:5px}
+input,select{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--fb);font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s;width:100%}
+input:focus,select:focus{border-color:var(--gold)}
+input::placeholder{color:var(--text3)}
+select option{background:var(--black2)}
+.fr{margin-bottom:12px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:6px;font-family:var(--fb);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;border:none}
+.btn-gold{background:var(--gold);color:#040D08}.btn-gold:hover{background:var(--gold2)}
+.btn-block{display:block;width:100%;text-align:center;justify-content:center}
+.br-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px}
+.br-row:last-child{border:none;padding-top:10px}
+.br-label{color:var(--text2)}.br-val{font-weight:500;color:var(--text)}
+.br-val.pos{color:var(--green)}.br-val.neg{color:var(--red)}.br-val.gold{color:var(--gold)}
+.verdict-box{border-radius:10px;padding:18px;margin-bottom:14px;border:1px solid transparent}
+.v-take{background:var(--green-dim);border-color:rgba(45,212,160,0.25)}
+.v-neg{background:var(--amber-dim);border-color:rgba(255,179,0,0.25)}
+.v-pass{background:var(--red-dim);border-color:rgba(255,90,90,0.25)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite;margin-right:5px}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="logo-wrap">
+    <div class="logo">North<span>Star</span></div>
+    <div class="logo-sub">Dispatch Co-Pilot</div>
+    <div class="plan-tag">$19/month</div>
+  </div>
+  <nav>
+    <div class="ns">Tools</div>
+    <button class="ni active" onclick="show('analyze')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+      Load Analyzer
+    </button>
+    <button class="ni" onclick="show('counter')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Counter-Offer Generator
+    </button>
+  </nav>
+  <div class="sb-footer">
+    <div style="font-size:10px;color:var(--text3)">Last verdict</div>
+    <div style="font-family:var(--fd);font-size:16px;font-weight:500;margin-top:2px;color:var(--gold)" id="sb-last">—</div>
+  </div>
+</aside>
+
+<div class="main">
+<div class="topbar">
+  <div class="pt" id="pt">Load Analyzer</div>
+  <div style="font-size:11px;color:var(--text2);display:flex;align-items:center"><span class="ldot"></span>Live</div>
+  <div class="tbr">
+    <div style="font-size:11px;font-family:var(--fm);color:var(--text3)" id="clock"></div>
+  </div>
+</div>
+<div class="content">
+
+<!-- LOAD ANALYZER -->
+<div class="sec active" id="analyze">
+  <div class="g2" style="align-items:start">
+    <div class="card-gold">
+      <div class="ct">Load Details</div>
+      <div class="fg">
+        <div class="fr"><label>Origin</label><input type="text" id="a-origin" placeholder="Atlanta, GA"/></div>
+        <div class="fr"><label>Destination</label><input type="text" id="a-dest" placeholder="Denver, CO"/></div>
+      </div>
+      <div class="fg3">
+        <div class="fr"><label>Gross Rate ($)</label><input type="number" id="a-rate" placeholder="2800"/></div>
+        <div class="fr"><label>Load Miles</label><input type="number" id="a-miles" placeholder="1420"/></div>
+        <div class="fr"><label>Deadhead Mi</label><input type="number" id="a-dh" placeholder="45"/></div>
+      </div>
+      <div class="fg3">
+        <div class="fr"><label>Dispatch %</label><input type="number" id="a-disp" placeholder="15"/></div>
+        <div class="fr"><label>Factoring %</label><input type="number" id="a-fact" placeholder="5"/></div>
+        <div class="fr"><label>Fuel ($/gal)</label><input type="number" id="a-fuel" placeholder="3.89" step="0.01"/></div>
+      </div>
+      <div class="fg">
+        <div class="fr"><label>Your MPG</label><input type="number" id="a-mpg" placeholder="7" step="0.5"/></div>
+        <div class="fr"><label>Equipment</label>
+          <select id="a-equip">
+            <option>Dry Van 53ft</option>
+            <option>Flatbed</option>
+            <option>Reefer</option>
+            <option>Box Truck 26ft</option>
+            <option>Hotshot</option>
+            <option>Lowboy/RGN</option>
+            <option>Tanker</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-gold btn-block" onclick="analyzeLoad()">Analyze This Load</button>
+    </div>
+    <div id="a-result">
+      <div class="card" style="text-align:center;padding:52px 20px">
+        <div style="font-family:var(--fd);font-size:52px;font-weight:300;color:var(--text3)">—</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:8px">Enter load details to get your verdict</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COUNTER OFFER -->
+<div class="sec" id="counter">
+  <div class="g2" style="align-items:start">
+    <div class="card-gold">
+      <div class="ct">Generate Counter-Offer Script</div>
+      <div class="fg">
+        <div class="fr"><label>Origin</label><input type="text" id="c-origin" placeholder="Chicago, IL"/></div>
+        <div class="fr"><label>Destination</label><input type="text" id="c-dest" placeholder="Dallas, TX"/></div>
+      </div>
+      <div class="fg">
+        <div class="fr"><label>Broker's Offer ($)</label><input type="number" id="c-offer" placeholder="1800"/></div>
+        <div class="fr"><label>Load Miles</label><input type="number" id="c-miles" placeholder="920"/></div>
+      </div>
+      <div class="fg">
+        <div class="fr"><label>Dispatch %</label><input type="number" id="c-disp" placeholder="15"/></div>
+        <div class="fr"><label>Factoring %</label><input type="number" id="c-fact" placeholder="5"/></div>
+      </div>
+      <div class="fg">
+        <div class="fr"><label>Fuel ($/gal)</label><input type="number" id="c-fuel" placeholder="3.89" step="0.01"/></div>
+        <div class="fr"><label>Your MPG</label><input type="number" id="c-mpg" placeholder="7" step="0.5"/></div>
+      </div>
+      <div class="fr"><label>Your Name</label><input type="text" id="c-name" placeholder="e.g. Marcus"/></div>
+      <button class="btn btn-gold btn-block" onclick="generateCounter()">Generate Script</button>
+    </div>
+    <div id="c-result">
+      <div class="card" style="text-align:center;padding:52px 20px">
+        <div style="font-family:var(--fd);font-size:52px;font-weight:300;color:var(--text3)">—</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:8px">Enter the broker's offer to generate your counter script</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+</div>
+
+<script>
+const titles={analyze:'Load Analyzer',counter:'Counter-Offer Generator'};
+function show(id){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('pt').textContent=titles[id];
+  document.querySelectorAll('.ni').forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+id+"'"))b.classList.add('active');});
+}
+function fmtD(n){return'$'+Math.round(n).toLocaleString();}
+function fmtD2(n){return'$'+parseFloat(n).toFixed(2);}
+function tick(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+setInterval(tick,1000);tick();
+
+function calcNetFull(rate,miles,dh,disp,fact,fuel,mpg){
+  const total=miles+(dh||0);
+  const dispAmt=rate*(disp/100);
+  const factAmt=rate*(fact/100);
+  const fuelCost=(total/(mpg||7))*fuel;
+  const net=rate-dispAmt-factAmt-fuelCost;
+  return{net,dispAmt,factAmt,fuelCost,total,rpm:net/miles,grossRpm:rate/miles};
+}
+
+function analyzeLoad(){
+  const rate=parseFloat(document.getElementById('a-rate').value)||0;
+  const miles=parseFloat(document.getElementById('a-miles').value)||0;
+  const dh=parseFloat(document.getElementById('a-dh').value)||0;
+  const disp=parseFloat(document.getElementById('a-disp').value)||15;
+  const fact=parseFloat(document.getElementById('a-fact').value)||5;
+  const fuel=parseFloat(document.getElementById('a-fuel').value)||3.89;
+  const mpg=parseFloat(document.getElementById('a-mpg').value)||7;
+  const origin=document.getElementById('a-origin').value||'Origin';
+  const dest=document.getElementById('a-dest').value||'Destination';
+  const equip=document.getElementById('a-equip').value;
+
+  if(!rate||!miles){
+    document.getElementById('a-result').innerHTML='<div class="card" style="padding:16px;color:var(--red);font-size:12px">Please enter rate and miles.</div>';
+    return;
+  }
+
+  const{net,dispAmt,factAmt,fuelCost,total,rpm,grossRpm}=calcNetFull(rate,miles,dh,disp,fact,fuel,mpg);
+  const market=equip.includes('Lowboy')||equip.includes('Tanker')?3.20:equip.includes('Reefer')?2.80:equip.includes('Flatbed')?2.60:2.45;
+
+  let vClass,vTitle,vColor,vMsg;
+  if(rpm>=1.75){vClass='v-take';vTitle='TAKE IT';vColor='var(--green)';vMsg='This load works. Net per mile meets your profitability threshold.';}
+  else if(rpm>=1.20){vClass='v-neg';vTitle='NEGOTIATE';vColor='var(--amber)';vMsg=`Below optimal. Counter at ${fmtD(Math.round(miles*1.85))} to improve your margin.`;}
+  else{vClass='v-pass';vTitle='PASS OR COUNTER';vColor='var(--red)';vMsg=`Minimum rate needed: ${fmtD(Math.round(miles*1.85))}. Current offer does not cover your costs adequately.`;}
+
+  document.getElementById('sb-last').textContent=vTitle;
+  document.getElementById('sb-last').style.color=vColor;
+
+  document.getElementById('a-result').innerHTML=`
+    <div class="card-gold">
+      <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">${equip} · ${origin} → ${dest}</div>
+      <div class="verdict-box ${vClass}">
+        <div style="font-family:var(--fd);font-size:28px;font-weight:500;color:${vColor};margin-bottom:4px">${vTitle}</div>
+        <div style="font-size:12px;color:var(--text2)">${vMsg}</div>
+      </div>
+      <div style="border-top:1px solid var(--border)">
+        <div class="br-row"><span class="br-label">Gross rate</span><span class="br-val gold">${fmtD(rate)} · ${fmtD2(grossRpm)}/mi</span></div>
+        <div class="br-row"><span class="br-label">Dispatch (${disp}%)</span><span class="br-val neg">-${fmtD(dispAmt)}</span></div>
+        <div class="br-row"><span class="br-label">Factoring (${fact}%)</span><span class="br-val neg">-${fmtD(factAmt)}</span></div>
+        <div class="br-row"><span class="br-label">Fuel (${total} total mi)</span><span class="br-val neg">-${fmtD(fuelCost)}</span></div>
+        <div class="br-row" style="font-size:13px"><span class="br-label" style="color:var(--text);font-weight:500">Net to you</span><span style="font-family:var(--fd);font-size:20px;font-weight:500;color:${vColor}">${fmtD(net)} · ${fmtD2(rpm)}/mi</span></div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text3);font-family:var(--fm)">Market avg: ${fmtD2(market)}/mi · DH: ${dh} mi · Total: ${total} mi</div>
+    </div>`;
+}
+
+function generateCounter(){
+  const offer=parseFloat(document.getElementById('c-offer').value)||0;
+  const miles=parseFloat(document.getElementById('c-miles').value)||0;
+  const disp=parseFloat(document.getElementById('c-disp').value)||15;
+  const fact=parseFloat(document.getElementById('c-fact').value)||5;
+  const fuel=parseFloat(document.getElementById('c-fuel').value)||3.89;
+  const mpg=parseFloat(document.getElementById('c-mpg').value)||7;
+  const name=document.getElementById('c-name').value||'';
+  const origin=document.getElementById('c-origin').value||'Origin';
+  const dest=document.getElementById('c-dest').value||'Destination';
+
+  if(!offer||!miles){
+    document.getElementById('c-result').innerHTML='<div class="card" style="padding:16px;color:var(--red);font-size:12px">Please enter the offer and miles.</div>';
+    return;
+  }
+
+  const{net:offerNet}=calcNetFull(offer,miles,0,disp,fact,fuel,mpg);
+  const counterRate=Math.round(miles*1.85/(1-(disp/100)-(fact/100)));
+  const{net:counterNet}=calcNetFull(counterRate,miles,0,disp,fact,fuel,mpg);
+  const diff=counterRate-offer;
+  const pct=Math.round((diff/offer)*100);
+
+  document.getElementById('c-result').innerHTML=`
+    <div class="card-gold" style="margin-bottom:12px">
+      <div class="g2" style="gap:10px;margin-bottom:14px">
+        <div style="background:var(--red-dim);border:1px solid rgba(255,90,90,0.2);padding:14px;border-radius:8px;text-align:center">
+          <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Their Offer</div>
+          <div style="font-family:var(--fd);font-size:28px;font-weight:500;color:var(--red)">${fmtD(offer)}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:4px">Net: ${fmtD(offerNet)}</div>
+        </div>
+        <div style="background:var(--green-dim);border:1px solid rgba(45,212,160,0.2);padding:14px;border-radius:8px;text-align:center">
+          <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Your Counter</div>
+          <div style="font-family:var(--fd);font-size:28px;font-weight:500;color:var(--green)">${fmtD(counterRate)}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:4px">Net: ${fmtD(counterNet)}</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text2);text-align:center">${fmtD(diff)} (+${pct}%) above their offer</div>
+    </div>
+    <div class="card">
+      <div class="ct">Word-for-Word Script</div>
+      <div style="background:var(--surface2);border-radius:8px;padding:16px;font-size:12px;color:var(--text2);line-height:2">
+        <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Say or send exactly:</div>
+        "${name?name+' here — ':''}I appreciate the load. ${origin} to ${dest}, ${miles} miles. At ${fmtD(offer)} my net after fuel and fees is below what I need to run this lane. I can do it at <strong style="color:var(--gold)">${fmtD(counterRate)}</strong> and have a driver confirmed within the hour. Can you get me there?"
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text3)">Based on $1.85/net mile after ${disp}% dispatch, ${fact}% factoring, fuel at $${fuel}/gal.</div>
+    </div>`;
+}
+</script>
+</body>
+</html>
